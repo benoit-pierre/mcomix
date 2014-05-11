@@ -1,0 +1,36 @@
+# $Id: PKGBUILD 127027 2015-02-03 09:26:07Z schuay $
+# Maintainer: schuay <jakob.gruber@gmail.com>
+# Contributor: Ray Powell <ray_al@xphoniexx.net>
+
+pkgname=mcomix
+pkgver=1.01
+pkgrel=1
+pkgdesc="A user-friendly, customizable image viewer specifically designed to handle comic books"
+arch=('any')
+url="http://sourceforge.net/projects/mcomix/"
+license=('GPL')
+depends=('pygtk' 'python2-pillow' 'xdg-utils' 'python2' \
+         'desktop-file-utils' 'hicolor-icon-theme' 'python2-setuptools')
+makedepends=('gettext' 'intltool')
+optdepends=('libunrar: for rar compressed comics' \
+            'p7zip: for 7z compressed comics' \
+            'mupdf: for PDF comics')
+conflicts=('comix')
+replaces=('comix')
+install='mcomix.install'
+source=("http://downloads.sourceforge.net/project/mcomix/MComix-${pkgver}/mcomix-${pkgver}.tar.bz2")
+
+package() {
+  cd ${srcdir}/${pkgname}-${pkgver}
+
+  python2 setup.py install --prefix=/usr --optimize=1 \
+    --single-version-externally-managed --root=${pkgdir}
+
+  install -Dm755 mime/comicthumb ${pkgdir}/usr/bin/comicthumb
+  install -Dm644 mime/comicthumb.1.gz ${pkgdir}/usr/share/man/man1/comicthumb.1.gz
+  install -Dm644 mime/comicthumb.thumbnailer ${pkgdir}/usr/share/thumbnailers/comicthumb.thumbnailer
+
+  chmod og=rX -R ${pkgdir}
+}
+
+md5sums=('c2837c3baf226798246db834d22d1de8')
