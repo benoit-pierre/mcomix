@@ -53,6 +53,11 @@ class Statusbar(gtk.EventBox):
         self.connect('button-release-event', self._button_released)
         self.set_events(gtk.gdk.BUTTON_PRESS_MASK|gtk.gdk.BUTTON_RELEASE_MASK)
 
+        self.clear()
+
+        self._loading = False
+
+    def clear(self):
         # Default status information
         self._page_info = ''
         self._file_info = ''
@@ -60,8 +65,6 @@ class Statusbar(gtk.EventBox):
         self._root = ''
         self._filename = ''
         self._update_sensitivity()
-
-        self._loading = False
 
     def set_message(self, message):
         """Set a specific message (such as an error message) on the statusbar,

@@ -153,6 +153,11 @@ class FileHandler(object):
                 self._open_image_files(filelist, self._current_file)
             self._archive_opened(image_files, current_image_index)
 
+        # Update status bar
+        self._window.statusbar.clear()
+        self._window.statusbar.set_root(self.get_base_filename())
+        self._window.statusbar.update()
+
         return True
 
     def _archive_opened(self, image_files, current_image_index):
