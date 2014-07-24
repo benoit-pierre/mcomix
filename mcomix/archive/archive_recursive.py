@@ -36,6 +36,9 @@ class RecursiveArchive(archive_base.BaseArchive):
                 archive.extract(f, destination_dir)
                 # And open it and list its contents.
                 sub_archive_path = os.path.join(destination_dir, f)
+                # Ignore directories!
+                if os.path.isdir(sub_archive_path):
+                    continue
                 sub_archive = archive_tools.get_archive_handler(sub_archive_path)
                 if sub_archive is None:
                     log.warning('Non-supported archive format: %s' %
