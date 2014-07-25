@@ -4,6 +4,7 @@ from mcomix import constants
 from mcomix import scrolling
 from mcomix import tools
 from mcomix import box
+from mcomix.smart_scroller import SmartScroller
 
 
 class FiniteLayout(object): # 2D only
@@ -20,6 +21,7 @@ class FiniteLayout(object): # 2D only
         content boxes.
         @param distribution_axis: the axis along which the Boxes are distributed.
         @param alignment_axis: the axis to center. """
+        self.smart_scroller = SmartScroller()
         self.scroller = scrolling.Scrolling()
         self.current_index = -1
         self.wrap_individually = wrap_individually
@@ -47,6 +49,14 @@ class FiniteLayout(object): # 2D only
         were not enough Boxes to scroll backwards, or the number of Boxes if
         there were not enough Boxes to scroll forwards. """
         # TODO reconsider interface
+        position = self.smart_scroller.scroll(backward=backwards)
+        if position is None:
+            if backwards:
+                return -1
+            else:
+                return +1
+        self.set_viewport_position(position)
+        return 0
         if (index == None) or (not self.wrap_individually):
             index = self.get_current_index()
         if not self.wrap_individually:

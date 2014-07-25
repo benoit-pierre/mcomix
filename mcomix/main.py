@@ -385,13 +385,20 @@ class MainWindow(gtk.Window):
             for i in range(n, len(self.images)):
                 self.images[i].hide()
 
+            self.layout.smart_scroller.setup_image(self.images[0].get_pixbuf())
+            self.layout.smart_scroller.setup_view(0, 0, *viewport_size)
+
             if scroll:
                 if at_bottom:
-                    self.scroll_to_predefined((constants.SCROLL_TO_END,) * 2,
-                        constants.LAST_INDEX)
+                    to_frame = -1
+                    backward = True
                 else:
-                    self.scroll_to_predefined((constants.SCROLL_TO_START,) * 2,
-                        constants.FIRST_INDEX)
+                    to_frame = 0
+                    backward = False
+                position = self.layout.smart_scroller.scroll(to_frame=to_frame, backward=backward)
+                if position is not None:
+                    self.layout.set_viewport_position(position)
+                    self.update_viewport_position()
 
             #self._image_box.window.thaw_updates() # XXX replacement necessary?
         else:
