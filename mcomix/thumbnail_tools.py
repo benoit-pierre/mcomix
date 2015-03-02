@@ -10,7 +10,8 @@ import mimetypes
 import threading
 import itertools
 import traceback
-import PIL.Image as Image
+import gobject
+import gtk
 from urllib import pathname2url
 
 try:  # The md5 module is deprecated as of Python 2.5, replaced by hashlib.
@@ -228,26 +229,44 @@ class Thumbnailer(object):
         it's size is different from the one specified in the thumbnailer,
         or if <force_recreation> is True. """
 
-        if not self.force_recreation:
-            thumbpath = self._path_to_thumbpath(filepath)
-
-            if os.path.isfile(thumbpath):
-                # Check the thumbnail's stored mTime
-                try:
-                    img = Image.open(thumbpath)
-                except IOError:
-                    return False
-
-                info = img.info
-                stored_mtime = long(info['Thumb::MTime'])
-                # The source file might no longer exist
-                file_mtime = os.path.isfile(filepath) and long(os.stat(filepath).st_mtime) or stored_mtime
-                return stored_mtime == file_mtime and \
-                    max(*img.size) == max(self.width, self.height)
-            else:
-                return False
-        else:
+        if self.force_recreation:
             return False
+
+        thumbpath = self._path_to_thumbpath(filepath)
+        if not os.path.isfile(thumbpath):
+            return False
+
+        stored_mtime = None
+        width, height = 0, 0
+        # Load just enough data to read stored tEXt data.
+        pixbuf = None
+        loader = gtk.gdk.PixbufLoader()
+        try:
+            with open(thumbpath, 'rb') as fp:
+                while pixbuf is None:
+                    data = fp.read(4 * 1024)
+                    if not data:
+                        break
+                    loader.write(data)
+                    pixbuf = loader.get_pixbuf()
+            if pixbuf is not None:
+                stored_mtime = long(pixbuf.get_option('tEXt::Thumb::MTime'))
+                wigth, height = pixbuf.get_width(), pixbuf.get_height()
+        except:
+            log.debug("Failed to read image `%s':\n%s",
+                      filepath, traceback.format_exc())
+        finally:
+            # This will raise an exception if we did not feed the loader,
+            # or fed it invalid/incomplete data...
+            try:
+                loader.close()
+            except gobject.GError, e:
+                pass
+
+        # The source file might no longer exist
+        file_mtime = os.path.isfile(filepath) and long(os.stat(filepath).st_mtime) or stored_mtime
+        return stored_mtime == file_mtime and \
+                max(width, height) == max(self.width, self.height)
 
     def _path_to_thumbpath(self, filepath):
         """ Converts <path> to an URI for the thumbnail in <dst_dir>. """
