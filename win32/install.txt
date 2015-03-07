@@ -1,0 +1,27 @@
+- install Python 2.7.9: choose "Windows x86 MSI installer" from https://www.python.org/downloads/release/python-279/
+  - make sure both "C:\Python27\" and "C:\Python27\Scripts\" are in your PATH
+- install PyGTK: choose latest "pygtk-all-in-one-VERSION.win32-py2.7.msi" from http://ftp.gnome.org/pub/GNOME/binaries/win32/pygtk/
+- install Pillow: choose latest "Pillow-VERSION.win32-py2.7.exe" from https://pypi.python.org/pypi/Pillow/2.7.0
+- install UnRAR: get "UnRAR.dll" and "UnRAR for Windows" from http://www.rarlab.com/rar_add.htm
+  - extract "UnRAR.dll" first
+  - then extract "UnRAR" to "C:\Program Files\UnrarDLL\"
+  - and add "C:\Program Files\UnrarDLL\" to your PATH
+- install 7zip: choose latest "32-bit x86" exe/msi from http://7-zip.org/download.html
+  - and add "C:\Program Files\7-Zip\" to your PATH
+- install czipfile: get latest "czipfile-VERSION.win32-py2.7.exe" from https://pypi.python.org/pypi/czipfile
+- install pytest: from http://pytest.org/latest/getting-started.html (don't forget dependencies)
+- install bzip2/gzip/tar/unzip/zip: from https://sourceforge.net/projects/gnuwin32/files
+  - and add "C:\Program Files\GnuWin32\bin\" to your PATH
+- install MuPDF: get latest "mupdf-VERSION-windows.zip" from http://mupdf.com/downloads/
+  - decompress to "C:\Program File\"
+  - rename "mupdf-VERSION-windows" to "MuPDF"
+  - and add "C:\Program Files\MuPDF\" to your PATH
+
+
+
+
+
+
+
+- install WinZip: get 32 bits version from http://www.winzip.com/downcl.html
+- install WinRAR: choose English (32 bit) version from http://www.rarlab.com/
