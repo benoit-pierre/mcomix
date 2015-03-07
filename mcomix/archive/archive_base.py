@@ -4,10 +4,8 @@
 extraction and adding new archive formats. """
 
 import os
-import errno
 import threading
 
-from mcomix import portability
 from mcomix import i18n
 from mcomix import process
 from mcomix import callback
@@ -47,21 +45,23 @@ class BaseArchive(object):
 
         return [f for f in self.iter_contents()]
 
-    def extract(self, filename, destination_dir):
+    def extract(self, filename, destination_path):
         """ Extracts the file specified by <filename>. This filename must
         be obtained by calling list_contents(). The file is saved to
-        <destination_dir>. """
+        <destination_path>. """
 
         assert isinstance(filename, unicode) and \
-            isinstance(destination_dir, unicode)
+            isinstance(destination_path, unicode)
 
-    def iter_extract(self, entries, destination_dir):
-        """ Generator to extract <entries> from archive to <destination_dir>. """
+    def iter_extract(self, entries):
+        """ Generator to extract <entries>.
+        <entries> is a dictionary mapping archive names to their destination path.
+        """
         wanted = set(entries)
         for filename in self.iter_contents():
             if not filename in wanted:
                 continue
-            self.extract(filename, destination_dir)
+            self.extract(filename, entries[filename])
             yield filename
             wanted.remove(filename)
             if 0 == len(wanted):
@@ -77,40 +77,8 @@ class BaseArchive(object):
         in one pass. """
         return False
 
-    def _replace_invalid_filesystem_chars(self, filename):
-        """ Replaces characters in <filename> that cannot be saved to the disk
-        with underscore and returns the cleaned-up name. """
-
-        unsafe_chars = portability.invalid_filesystem_chars()
-        translation_table = {}
-        replacement_char = u'_'
-        for char in unsafe_chars:
-            translation_table[ord(char)] = replacement_char
-
-        new_name = filename.translate(translation_table)
-
-        # Make sure the filename does not contain portions that might
-        # traverse directories, i.e. do not allow absolute paths
-        # and paths containing ../
-        normalized = os.path.normpath(new_name)
-        return normalized.lstrip('..' + os.sep).lstrip(os.sep)
-
-    def _create_directory(self, directory):
-        """ Recursively create a directory if it doesn't exist yet. """
-        if os.path.exists(directory):
-            return
-        try:
-            os.makedirs(directory)
-        except OSError, e:
-            # Can happen with concurrent calls.
-            if e.errno != errno.EEXIST:
-                raise e
-
     def _create_file(self, dst_path):
-        """ Open <dst_path> for writing, making sure base directory exists. """
-        dst_dir = os.path.dirname(dst_path)
-        # Create directory if it doesn't exist
-        self._create_directory(dst_dir)
+        """ Open <dst_path> for writing. """
         return open(dst_path, 'wb')
 
     @callback.Callback
@@ -155,7 +123,7 @@ class NonUnicodeArchive(BaseArchive):
         this function first to convert them to Unicode. """
 
         unicode_name = conversion_func(filename)
-        safe_name = self._replace_invalid_filesystem_chars(unicode_name)
+        safe_name = os.path.normpath(unicode_name)
         self.unicode_mapping[safe_name] = filename
         return safe_name
 
@@ -221,10 +189,10 @@ class ExternalExecutableArchive(NonUnicodeArchive):
 
         self.filenames_initialized = True
 
-    def extract(self, filename, destination_dir):
-        """ Extract <filename> from the archive to <destination_dir>. """
+    def extract(self, filename, destination_path):
+        """ Extract <filename> from the archive to <destination_path>. """
         assert isinstance(filename, unicode) and \
-                isinstance(destination_dir, unicode)
+                isinstance(destination_path, unicode)
 
         if not self._get_executable():
             return
@@ -232,7 +200,7 @@ class ExternalExecutableArchive(NonUnicodeArchive):
         if not self.filenames_initialized:
             self.list_contents()
 
-        output = self._create_file(os.path.join(destination_dir, filename))
+        output = self._create_file(destination_path)
         try:
             process.call([self._get_executable()] +
                          self._get_extract_arguments() +

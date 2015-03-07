@@ -2,6 +2,8 @@
 
 """ ZIP archive extractor via executable."""
 
+import os
+
 from mcomix import i18n
 from mcomix import process
 from mcomix.archive import archive_base
@@ -36,7 +38,7 @@ class ZipArchive(archive_base.ExternalExecutableArchive):
 
     def _unicode_filename(self, filename, conversion_func=i18n.to_unicode):
         unicode_name = conversion_func(filename)
-        safe_name = self._replace_invalid_filesystem_chars(unicode_name)
+        safe_name = os.path.normpath(unicode_name)
         # As it turns out, unzip will try to interpret filenames as glob...
         for c in '[*?':
             filename = filename.replace(c, '[' + c + ']')

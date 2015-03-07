@@ -146,8 +146,8 @@ class RarArchive(archive.archive_base.BaseArchive):
         finally:
             self._close(handle)
 
-    def extract(self, filename, destination_dir, try_again=True):
-        """ Extract <filename> from the archive to <destination_dir>. """
+    def extract(self, filename, destination_path, try_again=True):
+        """ Extract <filename> from the archive to <destination_path>. """
         # Obtain handle for RAR file, opening it in EXTRACT mode
         if not self._handle:
             handle = self._handle = self._open(self.archive, RarArchive._OpenMode.RAR_OM_EXTRACT)
@@ -163,7 +163,6 @@ class RarArchive(archive.archive_base.BaseArchive):
             # Check if the current file matches the requested file
             if (headerdata.FileNameW == filename):
                 # Extract file and stop processing
-                destination_path = os.path.join(destination_dir, filename)
                 result = self._unrar.RARProcessFileW(handle,
                     RarArchive._ProcessingMode.RAR_EXTRACT, None,
                     ctypes.c_wchar_p(destination_path))
@@ -188,7 +187,7 @@ class RarArchive(archive.archive_base.BaseArchive):
             # it probably doesn't even exist in the archive.
             self.close()
             if try_again:
-                self.extract(filename, destination_dir, False)
+                self.extract(filename, destination_path, False)
         elif errorcode == RarArchive._ErrorCode.ERAR_BAD_DATA:
             self.close()
 

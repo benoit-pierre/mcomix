@@ -8,7 +8,6 @@ from mcomix.archive import archive_base
 
 from distutils.version import LooseVersion
 import math
-import os
 import re
 
 # Default DPI for rendering.
@@ -41,9 +40,7 @@ class PdfArchive(archive_base.BaseArchive):
             proc.stdout.close()
             proc.wait()
 
-    def extract(self, filename, destination_dir):
-        self._create_directory(destination_dir)
-        destination_path = os.path.join(destination_dir, filename)
+    def extract(self, filename, destination_path):
         page_num = int(filename[0:-4])
         # Try to find optimal DPI.
         cmd = [_mudraw_executable] + _mudraw_trace_args + ['--', self.archive, str(page_num)]

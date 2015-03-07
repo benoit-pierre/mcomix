@@ -2,7 +2,6 @@
 
 """ Unicode-aware wrapper for tarfile.TarFile. """
 
-import os
 import tarfile
 import archive_base
 
@@ -40,19 +39,19 @@ class TarArchive(archive_base.NonUnicodeArchive):
     def list_contents(self):
         return [f for f in self.iter_contents()]
 
-    def extract(self, filename, destination_dir):
+    def extract(self, filename, destination_path):
         if not self._contents_listed:
             self.list_contents()
-        new = self._create_file(os.path.join(destination_dir, filename))
+        new = self._create_file(destination_path)
         file_object = self.tar.extractfile(self._original_filename(filename))
         new.write(file_object.read())
         file_object.close()
         new.close()
 
-    def iter_extract(self, entries, destination_dir):
+    def iter_extract(self, entries):
         if not self._contents_listed:
             self.list_contents()
-        for f in super(TarArchive, self).iter_extract(entries, destination_dir):
+        for f in super(TarArchive, self).iter_extract(entries):
             yield f
 
     def close(self):

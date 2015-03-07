@@ -233,9 +233,9 @@ class ArchiveFormatTest(object):
         archive = self.handler(self.archive_path)
         contents = archive.list_contents()
         self.assertItemsEqual(contents, self.archive_contents.keys())
-        for name in contents:
-            archive.extract(name, self.dest_dir)
-            path = os.path.join(self.dest_dir, name)
+        for n, name in enumerate(contents):
+            path = unicode(os.path.join(self.dest_dir, str(n)))
+            archive.extract(name, path)
             self.assertTrue(os.path.isfile(path))
             extracted_md5 = md5(path)
             original_md5 = md5(self.archive_contents[name])
@@ -245,10 +245,14 @@ class ArchiveFormatTest(object):
         archive = self.handler(self.archive_path)
         contents = archive.list_contents()
         self.assertItemsEqual(contents, self.archive_contents.keys())
+        entries = {}
+        for n, name in enumerate(contents):
+            path = unicode(os.path.join(self.dest_dir, str(n)))
+            entries[name] = path
         extracted = []
-        for name in archive.iter_extract(reversed(contents), self.dest_dir):
+        for name in archive.iter_extract(entries):
             extracted.append(name)
-            path = os.path.join(self.dest_dir, name)
+            path = entries[name]
             self.assertTrue(os.path.isfile(path))
             extracted_md5 = md5(path)
             original_md5 = md5(self.archive_contents[name])
@@ -349,20 +353,11 @@ for name, handler, is_available, format, not_solid, solid, password, header_encr
             ('@eh.png'             , '@eh.png'             , 'test/files/images/03-PNG-RGB.png'    ),
         )),
         # Check an entry name is not used as glob pattern.
-        ('GlobEntries', 'win32' != sys.platform, (
+        ('GlobEntries', True, (
             ('[rg.jpeg'            , '[rg.jpeg'            , 'test/files/images/01-JPG-Indexed.jpg'),
             ('[]rg.jpeg'           , '[]rg.jpeg'           , 'test/files/images/02-JPG-RGB.jpg'    ),
             ('*oo.JPG'             , '*oo.JPG'             , 'test/files/images/04-PNG-Indexed.png'),
             ('?eh.png'             , '?eh.png'             , 'test/files/images/03-PNG-RGB.png'    ),
-            # ('\\r.jpg'             , '\\r.jpg'             , 'test/files/images/blue.png'          ),
-            # ('ba\\.jpg'            , 'ba\\.jpg'            , 'test/files/images/red.png'           ),
-        )),
-        # Same, Windows version.
-        ('GlobEntries', 'win32' == sys.platform, (
-            ('[rg.jpeg'            , '[rg.jpeg'            , 'test/files/images/01-JPG-Indexed.jpg'),
-            ('[]rg.jpeg'           , '[]rg.jpeg'           , 'test/files/images/02-JPG-RGB.jpg'    ),
-            ('*oo.JPG'             , '_oo.JPG'             , 'test/files/images/04-PNG-Indexed.png'),
-            ('?eh.png'             , '_eh.png'             , 'test/files/images/03-PNG-RGB.png'    ),
             # ('\\r.jpg'             , '\\r.jpg'             , 'test/files/images/blue.png'          ),
             # ('ba\\.jpg'            , 'ba\\.jpg'            , 'test/files/images/red.png'           ),
         )),
