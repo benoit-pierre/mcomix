@@ -14,11 +14,18 @@ Usage: comicthumb INFILE OUTFILE [SIZE]
 
 from mcomix import thumbnail_tools
 from mcomix import portability
+from mcomix import archive
 
 import sys
 import urllib2
 
+
+def _ask_password(archive):
+    return None
+
+
 if __name__ == '__main__':
+    archive.ask_for_password = _ask_password
     argv = portability.get_commandline_args()
     try:
         in_path = argv[0]
