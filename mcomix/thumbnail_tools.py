@@ -10,8 +10,7 @@ import mimetypes
 import threading
 import itertools
 import traceback
-import gobject
-import gtk
+from gi.repository import GdkPixbuf, GObject
 from urllib import pathname2url
 
 try:  # The md5 module is deprecated as of Python 2.5, replaced by hashlib.
@@ -219,7 +218,12 @@ class Thumbnailer(object):
             if os.path.isfile(thumbpath):
                 os.remove(thumbpath)
 
-            pixbuf.save(thumbpath, 'png', tEXt_data)
+            option_keys = []
+            option_values = []
+            for key, value in tEXt_data.items():
+                option_keys.append(key)
+                option_values.append(value)
+            pixbuf.savev(thumbpath, 'png', option_keys, option_values)
             os.chmod(thumbpath, 0600)
 
         except Exception, ex:
@@ -244,7 +248,7 @@ class Thumbnailer(object):
         width, height = 0, 0
         # Load just enough data to read stored tEXt data.
         pixbuf = None
-        loader = gtk.gdk.PixbufLoader()
+        loader = GdkPixbuf.PixbufLoader.new()
         try:
             with open(thumbpath, 'rb') as fp:
                 while pixbuf is None:
@@ -264,7 +268,7 @@ class Thumbnailer(object):
             # or fed it invalid/incomplete data...
             try:
                 loader.close()
-            except gobject.GError, e:
+            except GObject.GError, e:
                 pass
 
         # The source file might no longer exist
