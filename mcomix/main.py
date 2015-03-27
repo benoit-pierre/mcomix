@@ -944,6 +944,9 @@ class MainWindow(gtk.Window):
                     axis = self._toggle_axis[widget]
                     dimensions[axis] -= widget.size_request()[axis]
 
+        # FIXME: can happen when aggressively playing with window resize...
+        assert dimensions[0] > 0 and dimensions[1] > 0
+
         return tuple(dimensions)
 
     def get_layout_pointer_position(self):
