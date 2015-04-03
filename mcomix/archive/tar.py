@@ -14,6 +14,9 @@ class TarArchive(archive_base.NonUnicodeArchive):
         self._contents_listed = False
         self._contents = []
 
+    def _to_unicode(self, string):
+        return string.decode('utf-8', 'replace')
+
     def is_solid(self):
         return True
 
@@ -29,7 +32,7 @@ class TarArchive(archive_base.NonUnicodeArchive):
             info = self.tar.next()
             if info is None:
                 break
-            name = self._unicode_filename(info.name)
+            name = self._unicode_filename(info.name, conversion_func=self._to_unicode)
             self._contents.append(name)
             yield name
         self._contents_listed = True
