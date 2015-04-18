@@ -4,6 +4,7 @@ write them.  """
 import os
 import cPickle
 import json
+import sys
 
 from mcomix import constants
 
@@ -99,6 +100,9 @@ prefs = {
     'fit to size mode': constants.ZOOM_MODE_HEIGHT,
     'fit to size px': 1800,
     'scan for new books on library startup': True,
+    # Works around GTK's slowness on Win32 by using PIL
+    # for loading instead and converting it afterwards.
+    'use pil': 'win32' == sys.platform,
     'openwith commands': []  # (label, command) pairs
 }
 
