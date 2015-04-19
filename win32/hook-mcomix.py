@@ -32,9 +32,9 @@ def gnome_dll_deps(dll, deps):
 dll_list = set()
 
 for dll in (
-    'libgdk_pixbuf-2.0-0.dll',
+    'libgirepository-1.0-1.dll',
     'libgthread-2.0-0.dll',
-    'libgtk-win32-2.0-0.dll',
+    'libgtk-3-0.dll',
 ):
     dll = gnome_dll(dll)
     gnome_dll_deps(dll, dll_list)
@@ -42,10 +42,31 @@ for dll in (
 for dll in sorted(dll_list):
     datas.append((dll, '.'))
 
+# Add GI repository hidden imports.
+
+gi_modules = set(collect_submodules('gi'))
+for unwanted in (
+'gi.overrides.Accounts',
+'gi.overrides.Dee',
+'gi.overrides.GExiv2',
+'gi.overrides.GIMarshallingTests',
+'gi.overrides.Gedit',
+'gi.overrides.Ggit',
+'gi.overrides.GooCanvas',
+'gi.overrides.Gst',
+'gi.overrides.GstPbutils',
+'gi.overrides.Vips',
+'gi.overrides._gi_gst',
+):
+    if unwanted in gi_modules:
+        gi_modules.remove(unwanted)
+
+hiddenimports.extend(gi_modules)
+
 # Add GTK locales.
 
 locale_dir = 'C:/Python27/Lib/site-packages/gnome/share/locale'
-for mo in glob.glob('%s/*/LC_MESSAGES/gtk20.mo' % locale_dir):
+for mo in glob.glob('%s/*/LC_MESSAGES/gtk30.mo' % locale_dir):
     datas.append((mo, 'share/locale/%s' % os.path.dirname(mo[len(locale_dir)+1:])))
 
 # Add czipfile/Pillow documentation.
@@ -91,12 +112,15 @@ datas.extend((
     ('C:/Python27/README.txt', 'doc/Python'),
     # Add Cairo/GLib/GTK+/Pango runtime files.
     ('C:/Python27/Lib/site-packages/gnome/etc/fonts', 'etc'),
-    ('C:/Python27/Lib/site-packages/gnome/etc/gtk-2.0', 'etc'),
+    ('C:/Python27/Lib/site-packages/gnome/etc/gtk-3.0', 'etc'),
     ('C:/Python27/Lib/site-packages/gnome/etc/pango', 'etc'),
-    ('C:/Python27/Lib/site-packages/gnome/lib/gtk-2.0/2.10.0/engines/libwimp.dll', 'lib/gtk-2.0/2.10.0/engines'),
+    # FIXME: keep only needed files.
+    ('C:/Python27/Lib/site-packages/gnome/lib/girepository-1.0', 'lib'),
     ('C:/Python27/Lib/site-packages/gnome/share/fonts', 'share'),
+    ('C:/Python27/Lib/site-packages/gnome/share/glib-2.0', 'share'),
+    ('C:/Python27/Lib/site-packages/gnome/share/icons/Adwaita', 'share/icons'),
     ('C:/Python27/Lib/site-packages/gnome/share/icons/hicolor', 'share/icons'),
-    ('C:/Python27/Lib/site-packages/gnome/share/themes/MS-Windows/gtk-2.0', 'share/themes/MS-Windows'),
+    ('C:/Python27/Lib/site-packages/gnome/share/themes/Adwaita/gtk-3.0', 'share/themes/Adwaita'),
     # Add Unrar DLL and documentation.
     ('C:/Program Files/UnrarDLL/unrar.dll', '.'),
     ('C:/Program Files/UnrarDLL/*.txt', 'doc/unrar'),
@@ -112,8 +136,6 @@ datas.extend((
     ('C:/Program Files/7-Zip/7z.exe', '.'),
     ('C:/Program Files/7-Zip/7z.dll', '.'),
     ('C:/Program Files/7-Zip/License.txt', 'doc/7z'),
-    # Override GTK configuration (fix fonts).
-    ('win32/gtkrc', 'etc/gtk-2.0'),
 ))
 
 # Add w9xpopen.exe.
