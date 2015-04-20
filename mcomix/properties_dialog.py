@@ -61,7 +61,7 @@ class _PropertiesDialog(gtk.Dialog):
         page = self._archive_page
         page.reset()
         window = self._window
-        if window.filehandler.archive_type is None:
+        if not window.filehandler.file_loaded:
             return
         # In case it's not ready yet, bump the cover extraction
         # in front of the queue.
@@ -69,17 +69,20 @@ class _PropertiesDialog(gtk.Dialog):
         if path is not None:
             window.filehandler._ask_for_files([path])
         self._update_page_image(page, 1)
-        filename = window.filehandler.get_pretty_current_filename()
+        filename = window.filehandler.get_base_filename()
         page.set_filename(filename)
-        path = window.filehandler.get_path_to_base()
+        filepath = window.filehandler.get_path_to_base()
+        if window.filehandler.archive_type is None:
+            filetype = _("Directory")
+        else:
+            filetype = strings.ARCHIVE_DESCRIPTIONS[window.filehandler.archive_type]
         main_info = (
             _('%d pages') % window.imagehandler.get_number_of_pages(),
-            _('%d comments') %
-                window.filehandler.get_number_of_comments(),
-            strings.ARCHIVE_DESCRIPTIONS[window.filehandler.archive_type]
+            _('%d comments') % window.filehandler.get_number_of_comments(),
+            filetype,
         )
         page.set_main_info(main_info)
-        self._update_page_secondary_info(page, path)
+        self._update_page_secondary_info(page, filepath)
         page.show_all()
 
     def _update_image_page(self):

@@ -38,7 +38,7 @@ class ImageHandler(object):
         #: Archive path, if currently opened file is archive
         self._base_path = None
         #: List of image file names, either from extraction or directory
-        self._image_files = None
+        self._image_files = []
         #: Index of current page
         self._current_image_index = None
         #: Set of images reading for decoding (i.e. already extracted)
@@ -255,10 +255,7 @@ class ImageHandler(object):
 
     def get_number_of_pages(self):
         """Return the number of pages in the current archive/directory."""
-        if self._image_files is not None:
-            return len(self._image_files)
-        else:
-            return 0
+        return len(self._image_files)
 
     def get_current_page(self):
         """Return the current page number (starting from 1), or 0 if no file is loaded."""

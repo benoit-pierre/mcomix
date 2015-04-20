@@ -106,6 +106,7 @@ class FileHandler(object):
         if error_message:
             self._window.statusbar.set_message(error_message)
             self._window.osd.show(error_message)
+            self._base_path = path
             self.file_opened()
             return False
 
@@ -282,8 +283,8 @@ class FileHandler(object):
         self._base_path = path
         try:
             self._condition = self._extractor.setup(self._base_path,
-                                                self._tmp_dir,
-                                                self.archive_type)
+                                                    self._tmp_dir,
+                                                    self.archive_type)
         except Exception:
             self._condition = None
             raise
@@ -434,12 +435,11 @@ class FileHandler(object):
         """
         if self.archive_type is not None:
             return self._base_path
-        elif self._window.imagehandler._image_files:
-            img_index = self._window.imagehandler._current_image_index
-            filename = self._window.imagehandler._image_files[img_index]
-            return os.path.dirname(filename)
-        else:
-            return None
+        path = self._window.imagehandler.get_path_to_page()
+        if path is not None:
+            return os.path.dirname(path)
+        # Can happen on empty directory, of if the current page is not set.
+        return self._base_path
 
     def get_base_filename(self):
         """Return the filename of the current base (archive filename or
