@@ -16,6 +16,7 @@ from mcomix import image_tools
 from mcomix import tools
 from mcomix import constants
 from mcomix import file_provider
+from mcomix import file_tools
 from mcomix import callback
 from mcomix import log
 from mcomix import last_read_page
@@ -110,10 +111,9 @@ class FileHandler(object):
             self.file_opened()
             return False
 
-        if archive_tools.is_archive_file(path):
-            self.archive_type = archive_tools.archive_mime_type(path)
-        else:
-            self.archive_type = None
+        file_class, file_type = file_tools.get_file_type(path)
+
+        self.archive_type = file_type if 'archive' == file_class else None
         self.filelist = self._file_provider.list_files()
         self._start_page = start_page
         self._current_file = os.path.abspath(path)
