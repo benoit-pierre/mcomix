@@ -110,8 +110,11 @@ class FileHandler(object):
             self.file_opened()
             return False
 
+        if archive_tools.is_archive_file(path):
+            self.archive_type = archive_tools.archive_mime_type(path)
+        else:
+            self.archive_type = None
         self.filelist = self._file_provider.list_files()
-        self.archive_type = archive_tools.archive_mime_type(path)
         self._start_page = start_page
         self._current_file = os.path.abspath(path)
         self._stop_waiting = False
@@ -467,7 +470,7 @@ class FileHandler(object):
             current_index = files.index(absolute_path)
 
             for path in files[current_index + 1:]:
-                if archive_tools.archive_mime_type(path) is not None:
+                if archive_tools.is_archive_file(path):
                     self._close()
                     self.open_file(path, keep_fileprovider=True)
                     return True
@@ -487,7 +490,7 @@ class FileHandler(object):
             current_index = files.index(absolute_path)
 
             for path in reversed(files[:current_index]):
-                if archive_tools.archive_mime_type(path) is not None:
+                if archive_tools.is_archive_file(path):
                     self._close()
                     self.open_file(path, -1, keep_fileprovider=True)
                     return True
