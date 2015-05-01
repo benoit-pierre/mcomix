@@ -23,6 +23,7 @@ from mcomix.preferences import prefs
 from mcomix import archive_extractor
 from mcomix import constants
 from mcomix import archive_tools
+from mcomix import file_tools
 from mcomix import tools
 from mcomix import image_tools
 from mcomix import portability
@@ -123,17 +124,20 @@ class Thumbnailer(object):
         tuple along with a file metadata dictionary: (pixbuf, tEXt_data) """
 
         if self.archive_support:
-            mime = archive_tools.archive_mime_type(filepath)
+            file_class, file_type = file_tools.get_file_type(filepath)
         else:
-            mime = None
-        if mime is not None:
+            if image_tools.is_image_file(filepath):
+                file_class = 'image'
+            else:
+                file_class = None
+        if 'archive' == file_class:
             cleanup = []
             try:
                 tmpdir = tempfile.mkdtemp(prefix=u'mcomix_archive_thumb.')
                 cleanup.append(lambda: shutil.rmtree(tmpdir, True))
                 archive = archive_tools.get_recursive_archive_handler(filepath,
                                                                       tmpdir,
-                                                                      type=mime)
+                                                                      type=file_type)
                 if archive is None:
                     return None, None
                 cleanup.append(archive.close)
@@ -161,7 +165,7 @@ class Thumbnailer(object):
                 for fn in reversed(cleanup):
                     fn()
 
-        elif image_tools.is_image_file(filepath):
+        elif 'image' == file_class:
             pixbuf = image_tools.load_pixbuf_size(filepath, self.width, self.height)
             if self.store_on_disk:
                 tEXt_data = self._get_text_data(filepath)
