@@ -74,7 +74,7 @@ def find_executable(candidates, workdir=None):
 
     On Windows:
 
-    - '.exe' will be appended to each candidate if not already
+    - '.bat/.exe' will be appended to each candidate if not already
 
     - MComix executable directory is prepended to the path on Windows
       (to support embedded tools/executables in the distribution).
@@ -100,12 +100,17 @@ def find_executable(candidates, workdir=None):
             os.path.isfile(exe) and \
             os.access(exe, os.R_OK|os.X_OK)
 
-    for name in candidates:
+    if 'win32' == sys.platform:
+        # On Windows, executable name must end with '.bat' or '.exe'.
+        win_candidates = []
+        for name in candidates:
+            if name.endswith('.bat') or name.endswith('.exe'):
+                win_candidates.append(name)
+            else:
+                win_candidates.extend((name + '.bat', name + '.exe'))
+        candidates = win_candidates
 
-        # On Windows, must end with '.exe'
-        if 'win32' == sys.platform:
-            if not name.endswith('.exe'):
-                name = name + '.exe'
+    for name in candidates:
 
         # Absolute path?
         if os.path.isabs(name):
