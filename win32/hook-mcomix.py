@@ -101,6 +101,9 @@ datas.extend((
     ('C:/Program Files/UnrarDLL/unrar.dll', '.'),
     ('C:/Program Files/UnrarDLL/*.txt', 'doc/unrar'),
     # Add MuPDF tools and documentation.
+    ('C:/Program Files/MuPDF/mudraw.bat', '.'),
+    ('C:/Program Files/MuPDF/mutool.bat', '.'),
+    ('C:/Program Files/MuPDF/muexe.exe', '.'),
     ('C:/Program Files/MuPDF/mudraw.exe', '.'),
     ('C:/Program Files/MuPDF/mutool.exe', '.'),
     ('C:/Program Files/MuPDF/*.txt', 'doc/mupdf'),
