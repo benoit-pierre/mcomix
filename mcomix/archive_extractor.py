@@ -2,6 +2,7 @@
 from __future__ import with_statement
 
 import os
+import time
 import threading
 import traceback
 
@@ -35,6 +36,7 @@ class Extractor(object):
         Return a threading.Condition related to the is_ready() method, or
         None if the format of <src> isn't supported.
         """
+        self._start_time = time.time()
         self._src = src
         self._dst = dst
         self._files = []
@@ -120,6 +122,7 @@ class Extractor(object):
                     max_threads = prefs['max extract threads']
                 else:
                     max_threads = 1
+                self._max_threads = max_threads
                 if self._archive.is_solid():
                     fn = self._extract_all_files
                 else:
@@ -160,6 +163,16 @@ class Extractor(object):
             self._files.remove(name)
             self._extracted.add(name)
             self._condition.notifyAll()
+            if 0 == len(self._files):
+                print 'extracted %u files from %s [%s/%s] in %.3f seconds using %u thread(s) and %s' % (
+                    len(self._extracted),
+                    self._archive.archive,
+                    'solid' if self._archive.is_solid() else 'normal',
+                    'clear' if self._archive._password is None else 'encrypted',
+                    time.time() - self._start_time,
+                    self._max_threads,
+                    self._archive._main_archive,
+                )
         self.file_extracted(self, name)
 
     def _extract_all_files(self, files):
