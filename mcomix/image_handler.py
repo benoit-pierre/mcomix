@@ -278,31 +278,26 @@ class ImageHandler(object):
         else:
             return None
 
-    def get_page_filename(self, page=None, double=False):
-        """Return the filename of the <page>, or the filename of the
+    def get_page_name(self, page=None, double=False):
+        """Return the name of the <page>, or the name of the
         currently viewed page if <page> is None. If <double> is True, return
-        a tuple (p, p') where p is the filename of <page> (or the current
-        page) and p' is the filename of the page after.
+        a tuple (p, p') where p is the name of <page> (or the current
+        page) and p' is the name of the page after.
         """
         if page is None:
-            page = self.get_current_page()
-
-        first_path = self.get_path_to_page(page)
-        if first_path == None:
-            return None
-
+            page_index = self._current_image_index
+        else:
+            page_index = page - 1
+        if 0 <= page_index < len(self._image_files):
+            img_file = self._image_files[page_index]
+            name, _ = self._window.filehandler._name_table.get(
+                img_file, (os.path.basename(img_file), None)
+            )
+        else:
+            name = None
         if double:
-            second_path = self.get_path_to_page(page + 1)
-
-            if second_path != None:
-                first = os.path.basename(first_path)
-                second = os.path.basename(second_path)
-            else:
-                return None
-
-            return first, second
-
-        return os.path.basename(first_path)
+            return name, self.get_page_name(page_index + 2)
+        return name
 
     def get_pretty_current_filename(self):
         """Return a string with the name of the currently viewed file that is
