@@ -93,10 +93,11 @@ class _PropertiesDialog(gtk.Dialog):
             return
         self._update_page_image(page)
         path = window.imagehandler.get_path_to_page()
-        filename = os.path.basename(path)
-        page.set_filename(filename)
+        name = window.imagehandler.get_page_name()
+        page.set_filename(name)
         width, height = window.imagehandler.get_size()
         main_info = (
+            os.path.basename(path),
             '%dx%d px' % (width, height),
             window.imagehandler.get_mime_name(),
         )
