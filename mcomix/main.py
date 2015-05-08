@@ -523,13 +523,13 @@ class MainWindow(gtk.Window):
             return
         if self.displayed_double():
             number_of_pages = 2
-            left_filename, right_filename = self.imagehandler.get_page_filename(double=True)
+            left_filename, right_filename = self.imagehandler.get_page_name(double=True)
             if self.is_manga_mode:
                 left_filename, right_filename = right_filename, left_filename
             filename = left_filename + ', ' + right_filename
         else:
             number_of_pages = 1
-            filename = self.imagehandler.get_page_filename()
+            filename = self.imagehandler.get_page_name()
         self.statusbar.set_page_number(page_number,
                                        self.imagehandler.get_number_of_pages(),
                                        number_of_pages)
