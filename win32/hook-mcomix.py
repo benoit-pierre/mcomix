@@ -106,6 +106,7 @@ datas.extend((
     ('C:/Program Files/MuPDF/muexe.exe', '.'),
     ('C:/Program Files/MuPDF/mudraw.exe', '.'),
     ('C:/Program Files/MuPDF/mutool.exe', '.'),
+    ('C:/Program Files/MuPDF/mupdf.dll', '.'),
     ('C:/Program Files/MuPDF/*.txt', 'doc/mupdf'),
     # Add 7z executable and documentation.
     ('C:/Program Files/7-Zip/7z.exe', '.'),
