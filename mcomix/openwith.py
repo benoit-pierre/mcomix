@@ -216,7 +216,7 @@ class OpenWithCommand(object):
         elif identifier == u'd':
             return os.path.basename(os.path.dirname(window.imagehandler.get_path_to_page()))
         elif identifier == u'f':
-            return window.imagehandler.get_page_filename()
+            return window.imagehandler.get_page_name()
         elif identifier == u'c':
             return os.path.basename(os.path.dirname(window.filehandler.get_path_to_base()))
         elif identifier == u'b':
