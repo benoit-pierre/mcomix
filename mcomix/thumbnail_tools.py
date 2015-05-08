@@ -146,9 +146,9 @@ class Thumbnailer(object):
                 if wanted is None:
                     return None, None
 
-                archive.extract(wanted, tmpdir)
-
-                image_path = os.path.join(tmpdir, wanted)
+                image_ext = os.path.splitext(wanted)[1].lower()
+                image_path = os.path.join(tmpdir, 'cover' + image_ext)
+                archive.extract(wanted, image_path)
                 if not os.path.isfile(image_path):
                     return None, None
 
