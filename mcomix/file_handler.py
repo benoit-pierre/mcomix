@@ -53,7 +53,7 @@ class FileHandler(object):
         self._stop_waiting = False
         #: List of comment files inside of the currently opened archive.
         self._comment_files = []
-        #: Mapping of absolute paths to archive path names.
+        #: Mapping of absolute path to (archive name, extracted name).
         self._name_table = {}
         #: Archive extractor.
         self._extractor = archive_extractor.Extractor()
@@ -298,25 +298,38 @@ class FileHandler(object):
             return
         self.file_loading = False
 
-        files = self._extractor.get_files()
+        files = self._extractor.get_contents()
         archive_images = [image for image in files
             if self._image_re.search(image)
             # Remove MacOS meta files from image list
             and not u'__MACOSX' in os.path.normpath(image).split(os.sep)]
 
         self._sort_archive_images(archive_images)
-        image_files = [ os.path.join(self._tmp_dir, f)
-                        for f in archive_images ]
+
+        image_files = []
+        for n, name in enumerate(archive_images):
+            ext = os.path.splitext(name)[1].lower()
+            extracted_name = 'i%04u%s' % (n + 1, ext)
+            extracted_path = os.path.join(self._tmp_dir, extracted_name)
+            self._name_table[extracted_path] = (name, extracted_name)
+            image_files.append(extracted_path)
 
         comment_files = filter(self._comment_re.search, files)
         tools.alphanumeric_sort(comment_files)
-        self._comment_files = [ os.path.join(self._tmp_dir, f)
-                                for f in comment_files ]
 
-        self._name_table = dict(zip(image_files, archive_images))
-        self._name_table.update(zip(self._comment_files, comment_files))
+        self._comment_files = []
+        for n, name in enumerate(comment_files):
+            ext = os.path.splitext(name)[1].lower()
+            extracted_name = 'c%04u%s' % (n + 1, ext)
+            extracted_path = os.path.join(self._tmp_dir, extracted_name)
+            self._name_table[extracted_path] = (name, extracted_name)
+            self._comment_files.append(extracted_path)
 
-        self._extractor.set_files(archive_images + comment_files)
+        files = []
+        for extracted_path in image_files + self._comment_files:
+            name, extracted_name = self._name_table[extracted_path]
+            files.append((name, extracted_name))
+        self._extractor.set_files(files)
 
         self._archive_opened(image_files)
 
@@ -423,7 +436,9 @@ class FileHandler(object):
 
     def get_comment_name(self, num):
         """Return the filename of comment <num>."""
-        return self._comment_files[num - 1]
+        path = self._comment_files[num - 1]
+        name, extracted_name = self._name_table[path]
+        return name
 
     def update_comment_extensions(self):
         """Update the regular expression used to filter out comments in
@@ -557,7 +572,8 @@ class FileHandler(object):
 
         if self.archive_type is not None:
             with self._condition:
-                return self._extractor.is_ready(self._name_table[filepath])
+                name, extracted_name = self._name_table[filepath]
+                return self._extractor.is_ready(name)
 
         elif filepath is None:
             return False
@@ -575,13 +591,13 @@ class FileHandler(object):
         """
         pass
 
-    def _extracted_file(self, extractor, name):
+    def _extracted_file(self, extractor, name, extracted_name):
         """ Called when the extractor finishes extracting the file at
         <name>. This name is relative to the temporary directory
         the files were extracted to. """
         if not self.file_loaded:
             return
-        filepath = os.path.join(extractor.get_directory(), name)
+        filepath = os.path.join(extractor.get_directory(), extracted_name)
         self.file_available([filepath])
 
     def _wait_on_comment(self, num):
@@ -600,7 +616,7 @@ class FileHandler(object):
             return
 
         try:
-            name = self._name_table[path]
+            name, extracted_name = self._name_table[path]
             with self._condition:
                 while not self._extractor.is_ready(name) and not self._stop_waiting:
                     self._condition.wait()
@@ -617,10 +633,11 @@ class FileHandler(object):
         with self._condition:
             extractor_files = self._extractor.get_files()
             for path in reversed(files):
-                name = self._name_table[path]
+                name, extracted_name = self._name_table[path]
                 if not self._extractor.is_ready(name):
-                    extractor_files.remove(name)
-                    extractor_files.insert(0, name)
+                    entry = (name, extracted_name)
+                    extractor_files.remove(entry)
+                    extractor_files.insert(0, entry)
             self._extractor.set_files(extractor_files)
 
     def thread_delete(self, path):
