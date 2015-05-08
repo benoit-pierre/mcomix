@@ -39,6 +39,9 @@ class Extractor(object):
         self._start_time = time.time()
         self._src = src
         self._dst = dst
+        # List of archive entries.
+        self._contents = []
+        # List of (name, path) entries to extract.
         self._files = []
         self._extracted = set()
         self._archive = archive_tools.get_recursive_archive_handler(src, dst, type=type)
@@ -57,15 +60,18 @@ class Extractor(object):
         return self._condition
 
     def get_files(self):
-        """Return a list of names of all the files the extractor is currently
-        set for extracting. After a call to setup() this is by default all
-        files found in the archive. The paths in the list are relative to
-        the archive root and are not absolute for the files once extracted.
+        """Return the list of files the extractor is set for extracting.
+        """
+        with self._condition:
+            return self._files[:]
+
+    def get_contents(self):
+        """Return a list of archive members.
         """
         with self._condition:
             if not self._contents_listed:
-                return
-            return self._files[:]
+                return []
+            return self._contents
 
     def get_directory(self):
         """Returns the root extraction directory of this extractor."""
@@ -74,8 +80,9 @@ class Extractor(object):
     def set_files(self, files):
         """Set the files that the extractor should extract from the archive in
         the order of extraction. Normally one would get the list of all files
-        in the archive using get_files(), then filter and/or permute this
-        list before sending it back using set_files().
+        in the archive using get_contents(), then filter and/or permute this
+        list before sending back a list of (archive name, extracted name)
+        using set_files().
 
         Note: Random access on gzip or bzip2 compressed tar archives is
         no good idea. These formats are supported *only* for backwards
@@ -86,7 +93,9 @@ class Extractor(object):
         with self._condition:
             if not self._contents_listed:
                 return
-            self._files = [f for f in files if f not in self._extracted]
+            self._files = [(name, extracted_name)
+                           for name, extracted_name in files
+                           if name not in self._extracted]
             if self._extract_started:
                 self.extract()
 
@@ -146,7 +155,7 @@ class Extractor(object):
         pass
 
     @callback.Callback
-    def file_extracted(self, extractor, filename):
+    def file_extracted(self, extractor, name, extracted_name):
         """ Called whenever a new file is extracted and ready. """
         pass
 
@@ -158,9 +167,9 @@ class Extractor(object):
         if self._archive:
             self._archive.close()
 
-    def _extraction_finished(self, name):
+    def _extraction_finished(self, name, extracted_name):
         with self._condition:
-            self._files.remove(name)
+            self._files.remove((name, extracted_name))
             self._extracted.add(name)
             self._condition.notifyAll()
             if 0 == len(self._files):
@@ -173,22 +182,31 @@ class Extractor(object):
                     self._max_threads,
                     self._archive._main_archive,
                 )
-        self.file_extracted(self, name)
+        self.file_extracted(self, name, extracted_name)
 
     def _extract_all_files(self, files):
 
         # With multiple extractions for each pass, some of the files might have
         # already been extracted.
         with self._condition:
-            files = list(set(files) - self._extracted)
-            files.sort()
+            files = [(name, extracted_name)
+                     for name, extracted_name in files
+                     if name not in self._extracted]
+
+        log.debug(u'Extracting from "%s" to "%s": "%s"', self._src, self._dst,
+                  ' '.join(['"%s":"%s"' % (name, extracted_name)
+                            for name, extracted_name in files]))
+
+        entries = {}
+        for name, extracted_name in files:
+            entries[name] = os.path.join(self._dst, extracted_name)
 
         try:
-            log.debug(u'Extracting from "%s" to "%s": "%s"', self._src, self._dst, '", "'.join(files))
-            for f in self._archive.iter_extract(files, self._dst):
+            for name in self._archive.iter_extract(entries):
                 if self._extract_thread.must_stop():
                     return
-                self._extraction_finished(f)
+                extracted_name = os.path.basename(entries[name])
+                self._extraction_finished(name, extracted_name)
 
         except Exception, ex:
             # Better to ignore any failed extractions (e.g. from a corrupt
@@ -198,15 +216,21 @@ class Extractor(object):
             log.error(_('! Extraction error: %s'), ex)
             log.debug('Traceback:\n%s', traceback.format_exc())
 
-    def _extract_file(self, name):
+    def _extract_file(self, file):
         """Extract the file named <name> to the destination directory,
         mark the file as "ready", then signal a notify() on the Condition
         returned by setup().
         """
 
+        name, extracted_name = file
+
+        log.debug(u'Extracting from "%s" to "%s": "%s":"%s"',
+                  self._src, self._dst, name, extracted_name)
+
+        destination_path = os.path.join(self._dst, extracted_name)
+
         try:
-            log.debug(u'Extracting from "%s" to "%s": "%s"', self._src, self._dst, name)
-            self._archive.extract(name, self._dst)
+            self._archive.extract(name, destination_path)
 
         except Exception, ex:
             # Better to ignore any failed extractions (e.g. from a corrupt
@@ -218,7 +242,7 @@ class Extractor(object):
 
         if self._extract_thread.must_stop():
             return
-        self._extraction_finished(name)
+        self._extraction_finished(name, extracted_name)
 
     def _list_contents(self, archive):
         files = []
@@ -227,7 +251,7 @@ class Extractor(object):
                 return
             files.append(f)
         with self._condition:
-            self._files = files
+            self._contents = files
             self._contents_listed = True
         self.contents_listed(self, files)
 
