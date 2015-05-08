@@ -1004,7 +1004,7 @@ class MainWindow(gtk.Window):
         """ Derive some sensible filename (archive name + _ + filename should do) and offer
         the user the choice to save the current page with the selected name. """
         if self.filehandler.archive_type is not None:
-            archive_name = self.filehandler.get_pretty_current_filename()
+            archive_name = self.imagehandler.get_pretty_current_filename()
             file_name = self.imagehandler.get_path_to_page()
             suggested_name = os.path.splitext(archive_name)[0] + \
                 u'_' + os.path.split(file_name)[-1]
