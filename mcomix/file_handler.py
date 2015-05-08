@@ -465,13 +465,6 @@ class FileHandler(object):
         """
         return os.path.basename(self.get_path_to_base())
 
-    def get_pretty_current_filename(self):
-        """Return a string with the name of the currently viewed file that is
-        suitable for printing.
-        """
-
-        return self._window.imagehandler.get_pretty_current_filename()
-
     def _open_next_archive(self, *args):
         """Open the archive that comes directly after the currently loaded
         archive in that archive's directory listing, sorted alphabetically.
