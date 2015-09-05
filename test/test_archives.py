@@ -224,11 +224,15 @@ class ArchiveFormatTest(object):
         self.assertItemsEqual(contents, self.archive_contents.keys())
         # Use out-of-order extraction to try to trip implementation.
         for name in reversed(contents):
+            expected_data = self.archive_contents[name]
+            if expected_data is Exception:
+                self.assertRaises(Exception, self.archive.extract, self.dest_dir)
+                continue
             self.archive.extract(name, self.dest_dir)
             path = os.path.join(self.dest_dir, name)
             self.assertTrue(os.path.isfile(path))
             extracted_md5 = md5(path)
-            original_md5 = md5(get_testfile_path(self.archive_contents[name]))
+            original_md5 = md5(get_testfile_path(expected_data))
             self.assertEqual((name, extracted_md5), (name, original_md5))
 
     def test_iter_extract(self):
@@ -236,16 +240,24 @@ class ArchiveFormatTest(object):
         contents = self.archive.list_contents()
         self.assertItemsEqual(contents, self.archive_contents.keys())
         extracted = []
-        for name in self.archive.iter_extract(reversed(contents), self.dest_dir):
-            extracted.append(name)
+        iterator = self.archive.iter_extract(reversed(contents), self.dest_dir)
+        for expected_name in contents:
+            expected_data = self.archive_contents[expected_name]
+            if expected_data is Exception:
+                self.assertRaises(Exception, next, iterator)
+                continue
+            name = next(iterator)
+            # Entries must have been extracted in the order they are listed in
+            # the archive.  (necessary to prevent bad performances on solid
+            # archives)
+            self.assertEqual(name, expected_name)
             path = os.path.join(self.dest_dir, name)
             self.assertTrue(os.path.isfile(path))
             extracted_md5 = md5(path)
-            original_md5 = md5(get_testfile_path(self.archive_contents[name]))
+            original_md5 = md5(get_testfile_path(expected_data))
             self.assertEqual((name, extracted_md5), (name, original_md5))
-        # Entries must have been extracted in the order they are listed in the archive.
-        # (necessary to prevent bad performances on solid archives)
-        self.assertEqual(extracted, contents)
+        # We must have extracted all entries.
+        self.assertRaises(StopIteration, next, iterator)
 
 
 class RecursiveArchiveFormatTest(ArchiveFormatTest):
@@ -469,6 +481,58 @@ class RecursiveArchiveFormatRarRedAndBluesTest(RecursiveArchiveFormatExternalRar
 class RecursiveArchiveFormatRarEmbeddedRedAndBluesRarTest(RecursiveArchiveFormatExternalRarEmbeddedRedAndBluesRarTest):
 
     base_handler = rar.RarArchive
+    is_available = rar.RarArchive.is_available()
+
+
+# Robustness tests: truncated/damaged archives.
+
+class RobustnessArchiveFormatTest(ArchiveFormatTest):
+
+    @classmethod
+    def setUpClass(cls):
+        skip = None
+        if not cls.is_available:
+            raise unittest.SkipTest('support for archive format not available')
+        if not os.path.exists(cls.archive_path):
+            skip = 'archive is missing: %s' % cls.archive_path
+        if skip is not None:
+            raise unittest.SkipTest(skip)
+        cls.archive_contents = dict([
+            (archive_name.replace('/', os.sep),
+             data if data is Exception else get_testfile_path(data))
+            for archive_name, data in
+            cls.contents])
+
+class RobustnessArchiveFormatExternalRarTruncatedTest(RobustnessArchiveFormatTest, MComixTest):
+
+    handler = rar_external.RarArchive
+    is_available = rar_external.RarArchive.is_available()
+    archive_path = get_testfile_path('archives', 'truncated.rar')
+    contents = (
+            ('arg.jpeg', 'images/01-JPG-Indexed.jpg'),
+            ('foo.JPG' , 'images/04-PNG-Indexed.png'),
+            ('bar.jpg' , Exception                  ),
+    )
+    solid = False
+
+class RobustnessArchiveFormatRarTruncatedTest(RobustnessArchiveFormatExternalRarTruncatedTest):
+
+    handler = rar.RarArchive
+    is_available = rar.RarArchive.is_available()
+
+class RobustnessArchiveFormatExternalRarDamagedTest(RobustnessArchiveFormatExternalRarTruncatedTest):
+
+    archive_path = get_testfile_path('archives', 'damaged.rar')
+    contents = (
+            ('arg.jpeg', 'images/01-JPG-Indexed.jpg'),
+            ('foo.JPG' , Exception                  ),
+            ('bar.jpg' , 'images/02-JPG-RGB.jpg'    ),
+            ('meh.png' , 'images/03-PNG-RGB.png'    ),
+    )
+
+class RobustnessArchiveFormatRarDamagedTest(RobustnessArchiveFormatExternalRarDamagedTest):
+
+    handler = rar.RarArchive
     is_available = rar.RarArchive.is_available()
 
 
