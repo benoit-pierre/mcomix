@@ -82,13 +82,8 @@ class OpenWithCommand(object):
                 workdir = self.parse(window, text=self.get_cwd())[0]
                 os.chdir(workdir)
 
-            # Redirect process output to null here?
-            # FIXME: Close process when finished to avoid zombie process
             args = self.parse(window)
-            if sys.platform == 'win32':
-                proc = process.Win32Popen(args)
-            else:
-                proc = process.popen(args, stdout=process.NULL)
+            proc = process.popen(args, stdout=process.NULL, noconsole=False)
             del proc
 
         except Exception, e:
