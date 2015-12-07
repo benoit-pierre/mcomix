@@ -184,15 +184,11 @@ def Win32Popen(cmd):
     # Some required structures for the method call...
     startupinfo = StartupInfo()
     ctypes.memset(ctypes.addressof(startupinfo), 0, ctypes.sizeof(startupinfo))
-    # Do not create a console window.
-    startupinfo.dwFlags = subprocess.STARTF_USESHOWWINDOW
-    startupinfo.wShowWindow = subprocess.SW_HIDE
-    startupinfo.cb = ctypes.sizeof(startupinfo)
     processinfo = ProcessInformation()
 
     # Spawn new process
     success = ctypes.windll.kernel32.CreateProcessW(exe, buffer,
-            None, None, False, 0, None, None, ctypes.byref(startupinfo),
+            None, None, False, _get_creationflags(), None, None, ctypes.byref(startupinfo),
             ctypes.byref(processinfo))
 
     if success:
