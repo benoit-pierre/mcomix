@@ -15,10 +15,13 @@ class RarArchive(archive_base.ExternalExecutableArchive):
         return self._find_unrar_executable()
 
     def _get_list_arguments(self):
-        return [u'vb', u'-p-', u'--']
+        return [u'vt', u'-p-', u'--']
 
     def _get_extract_arguments(self):
         return [u'p', u'-inul', u'-@', u'-p-', u'--']
+
+    def _parse_list_output_line(self, line):
+        print '_parse_list_output_line', line
 
     @staticmethod
     def _find_unrar_executable():
