@@ -28,13 +28,15 @@ class RarArchive(archive_base.ExternalExecutableArchive):
         return self._find_unrar_executable()
 
     def _get_password_argument(self):
-        if self._is_encrypted:
-            self._get_password()
-            return u'-p' + self._password
-        else:
+        if not self._is_encrypted:
             # Add a dummy password anyway, to prevent deadlock on reading for
             # input if we did not correctly detect the archive is encrypted.
             return u'-p-'
+        self._get_password()
+        # Check for invalid empty password, see comment above.
+        if not self._password:
+            return u'-p-'
+        return u'-p' + self._password
 
     def _get_list_arguments(self):
         args = [self._get_executable(), u'vt']
