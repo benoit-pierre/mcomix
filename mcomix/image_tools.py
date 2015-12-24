@@ -324,6 +324,10 @@ def load_pixbuf_size(path, width, height):
         im = Image.open(path)
         width, height = get_fitting_size(im.size, (width, height))
         im.draft(None, (width, height))
+        # Make sure we get the size what we asked for, same problem as
+        # described for gdk.pixbuf_new_from_file_at_size in comment below.
+        if im.size != (width, height):
+            im = im.resize((width, height))
         pixbuf = pil_to_pixbuf(im, keep_orientation=True)
     else:
         image_format, image_width, image_height = get_image_info(path)
@@ -335,7 +339,11 @@ def load_pixbuf_size(path, width, height):
         if 'GIF' == image_format:
             pixbuf = gtk.gdk.pixbuf_new_from_file(path)
         else:
-            pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(path, width, height)
+            # Don't use pixbuf_new_from_file_at_size, since the way aspect
+            # ratio preservation is handled may result in a different size
+            # than the one if calculated and asked (e.g. one pixel for the
+            # width).
+            pixbuf = gtk.gdk.pixbuf_new_from_file_at_scale(path, width, height, False)
     return fit_in_rectangle(pixbuf, width, height, scaling_quality=gtk.gdk.INTERP_BILINEAR)
 
 def load_pixbuf_data(imgdata):
