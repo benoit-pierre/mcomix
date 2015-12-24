@@ -70,7 +70,7 @@ class Thumbnailer(object):
         self.force_recreation = force_recreation
         self.archive_support = archive_support
 
-    def thumbnail(self, filepath, async=False):
+    def thumbnail(self, filepath, frompath=None, async=False):
         """ Returns a thumbnail pixbuf for <filepath>, transparently handling
         both normal image files and archives. If a thumbnail file already exists,
         it is re-used. Otherwise, a new thumbnail is created from <filepath>.
@@ -90,14 +90,16 @@ class Thumbnailer(object):
             return pixbuf
 
         else:
+            if frompath is None:
+                frompath = filepath
             if async:
-                thread = threading.Thread(target=self._create_thumbnail, args=(filepath,))
+                thread = threading.Thread(target=self._create_thumbnail, args=(filepath,frompath))
                 thread.name += '-thumbnailer'
                 thread.setDaemon(True)
                 thread.start()
                 return None
             else:
-                return self._create_thumbnail(filepath)
+                return self._create_thumbnail(filepath, frompath)
 
     @callback.Callback
     def thumbnail_finished(self, filepath, pixbuf):
@@ -117,7 +119,7 @@ class Thumbnailer(object):
                 log.error(_("! Could not remove file \"%s\""), thumbpath)
                 log.error(error)
 
-    def _create_thumbnail_pixbuf(self, filepath):
+    def _create_thumbnail_pixbuf(self, filepath,):
         """ Creates a thumbnail pixbuf from <filepath>, and returns it as a
         tuple along with a file metadata dictionary: (pixbuf, tEXt_data) """
 
@@ -144,14 +146,18 @@ class Thumbnailer(object):
                 archive.extract(wanted, tmpdir)
 
                 image_path = os.path.join(tmpdir, wanted)
-                if not os.path.isfile(image_path):
+                if not os.path.isfile(image_path) or \
+                   not os.path.getsize(image_path):
                     return None, None
 
-                pixbuf = image_tools.load_pixbuf_size(image_path, self.width, self.height)
+                try:
+                    pixbuf = image_tools.load_pixbuf_size(image_path, self.width, self.height)
+                except Exception, ex:
+                    log.warning( _('! Could not load image "%(image_path)s": %(error)s'),
+                                { 'image_path' : image_path, 'error' : ex } )
+                    return None, None
                 if self.store_on_disk:
                     tEXt_data = self._get_text_data(image_path)
-                    # Use the archive's mTime instead of the extracted file's mtime
-                    tEXt_data['tEXt::Thumb::MTime'] = str(long(os.stat(filepath).st_mtime))
                 else:
                     tEXt_data = None
 
@@ -171,14 +177,16 @@ class Thumbnailer(object):
         else:
             return None, None
 
-    def _create_thumbnail(self, filepath):
+    def _create_thumbnail(self, filepath, frompath):
         """ Creates the thumbnail pixbuf for <filepath>, and saves the pixbuf
         to disk if necessary. Returns the created pixbuf, or None, if creation failed. """
 
-        pixbuf, tEXt_data = self._create_thumbnail_pixbuf(filepath)
+        pixbuf, tEXt_data = self._create_thumbnail_pixbuf(frompath)
         self.thumbnail_finished(filepath, pixbuf)
 
         if pixbuf and self.store_on_disk:
+            # Use the original file's mTime (e.g. instead of the extracted cover's mtime).
+            tEXt_data['tEXt::Thumb::MTime'] = str(long(os.stat(filepath).st_mtime))
             thumbpath = self._path_to_thumbpath(filepath)
             self._save_thumbnail(pixbuf, thumbpath, tEXt_data)
 

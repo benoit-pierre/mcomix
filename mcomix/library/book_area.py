@@ -104,6 +104,10 @@ class _BookArea(gtk.ScrolledWindow):
                 <menuitem action="remove from collection" />
                 <menuitem action="remove from library" />
                 <menuitem action="completely remove" />
+                <menu action="set cover">
+                    <menuitem action="from file" />
+                    <menuitem action="reset to default" />
+                </menu>
                 <separator />
                 <menuitem action="copy to clipboard" />
                 <separator />
@@ -157,6 +161,10 @@ class _BookArea(gtk.ScrolledWindow):
                 _('_Remove and delete from disk'), None,
                 _('Deletes the selected books from disk.'),
                 self._completely_remove_book),
+            ('set cover', None, _('Set _cover'), None,
+                _('Changes the book cover.'), None),
+            ('from file', None, _('_From file...'), None, None, self._set_cover),
+            ('reset to default', None, _('_Reset to default'), None, None, self._reset_cover),
             ('copy to clipboard', gtk.STOCK_COPY,
                 _('_Copy'), None,
                 _('Copies the selected book\'s path to clipboard.'),
@@ -426,15 +434,16 @@ class _BookArea(gtk.ScrolledWindow):
         return (int(0.67 * prefs['library cover size']) + 2 * border_size,
                 prefs['library cover size'] + 2 * border_size)
 
-    def _get_pixbuf(self, uid):
+    def _get_pixbuf(self, uid, pixbuf=None):
         """ Get or create the thumbnail for the selected book <uid>. """
         assert isinstance(uid, int)
         book = self._library.backend.get_book_by_id(uid)
         if self._cache.exists(book.path):
             pixbuf = self._cache.get(book.path)
         else:
+            if pixbuf is None:
+                pixbuf = self._library.backend.get_book_thumbnail(book.path) or constants.MISSING_IMAGE_ICON
             width, height = self._pixbuf_size(border_size=0)
-            pixbuf = self._library.backend.get_book_thumbnail(book.path) or constants.MISSING_IMAGE_ICON
             pixbuf = image_tools.fit_in_rectangle(pixbuf, width, height, scale_up=True)
             pixbuf = image_tools.add_border(pixbuf, 1, 0xFFFFFFFF)
             self._cache.add(book.path, pixbuf)
@@ -492,6 +501,26 @@ class _BookArea(gtk.ScrolledWindow):
         """
         selected = iconview.get_selected_items()
         self._library.control_area.update_info(selected)
+
+    def _update_book_cover(self, path, cover=None):
+        iter = self._liststore.get_iter(path)
+        uid = self._liststore.get_value(iter, 1)
+        book = self._library.backend.get_book_by_id(uid)
+        if self._cache.exists(book.path):
+            self._cache.invalidate(book.path)
+        pixbuf = self._library.backend.set_book_cover(uid, cover=cover)
+        pixbuf = self._get_pixbuf(uid, pixbuf)
+        self._liststore.set_value(iter, 0, pixbuf)
+
+    def _set_cover(self, *args):
+        selected = self._iconview.get_selected_items()
+        for path in selected:
+            self._update_book_cover(path,  'big-jpg_i0100.jpg')
+
+    def _reset_cover(self, *args):
+        selected = self._iconview.get_selected_items()
+        for path in selected:
+            self._update_book_cover(path)
 
     def _remove_books_from_collection(self, *args):
         """Remove the currently selected books from the current collection,
@@ -705,6 +734,12 @@ class _BookArea(gtk.ScrolledWindow):
 
         uris = [ portability.normalize_uri(uri) for uri in uris ]
         paths = [ urllib.url2pathname(uri).decode('utf-8') for uri in uris ]
+
+        if widget == self._iconview and len(paths) == 1 and image_tools.is_image_file(paths[0]):
+            path = self._iconview.get_path_at_pos(x, y)
+            if path is not None:
+                self._update_book_cover(path, paths[0])
+            return
 
         collection = self._library.collection_area.get_current_collection()
         collection_name = self._library.backend.get_collection_name(collection)

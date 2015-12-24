@@ -136,6 +136,31 @@ class _LibraryBackend(object):
 
         return self.get_book_thumbnail(path)
 
+    def set_book_cover(self, book, cover=None):
+        try:
+            path = self._con.execute('''select path from Book
+                where id = ?''', (book,)).fetchone()
+        except Exception:
+            log.error( _('! Non-existant book #%i'), book )
+            return None
+
+        # Use the maximum image size allowed by the library, so that thumbnails
+        # might be downscaled, but never need to be upscaled (and look ugly).
+        thumbnailer = thumbnail_tools.Thumbnailer(dst_dir=constants.LIBRARY_COVERS_PATH,
+                                                  store_on_disk=True,
+                                                  archive_support=True,
+                                                  size=(constants.MAX_LIBRARY_COVER_SIZE,
+                                                        constants.MAX_LIBRARY_COVER_SIZE))
+        thumbnailer.delete(path)
+
+        if cover is None:
+            return self.get_book_thumbnail(path)
+
+        thumb = thumbnailer.thumbnail(path, frompath=cover)
+
+        if thumb is None: log.warning( _('! Could not set cover for book "%s"'), path )
+        return thumb
+
     def get_book_path(self, book):
         """Return the filesystem path to <book>, or None if <book> isn't
         in the library.
