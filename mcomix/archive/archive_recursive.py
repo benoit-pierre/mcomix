@@ -25,6 +25,10 @@ class RecursiveArchive(archive_base.BaseArchive):
         self.support_concurrent_extractions = False
 
     def _iter_contents(self, archive, root=None):
+        # If a password was set, we assume both the main archive and all
+        # sub-archives use the same. This allow setting a dummy password
+        # to prevent prompts if any archives are encrypted.
+        archive.set_password(self._password)
         self._archive_list.append(archive)
         self._archive_root[archive] = root
         sub_archive_list = []

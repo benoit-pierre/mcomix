@@ -138,6 +138,8 @@ class Thumbnailer(object):
                 if archive is None:
                     return None, None
                 cleanup.append(archive.close)
+                # Set dummy password to prevent prompts if the archive is encrypted.
+                archive.set_password('')
                 files = archive.list_contents()
                 wanted = self._guess_cover(files)
                 if wanted is None:

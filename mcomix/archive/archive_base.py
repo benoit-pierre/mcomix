@@ -33,6 +33,13 @@ class BaseArchive(object):
             self._lock = threading.Lock()
             self._waiting_for_password = False
 
+    def set_password(self, password=None):
+        self._password = password
+        if password is None:
+            self._event.clear()
+        else:
+            self._event.set()
+
     def iter_contents(self):
         """ Generator for listing the archive contents.
         """
