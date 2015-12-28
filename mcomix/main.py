@@ -259,16 +259,6 @@ class MainWindow(gtk.Window):
             toggleaction = self.actiongroup.get_action('fullscreen')
             toggleaction.set_active(True)
 
-        if prefs['previous quit was quit and save']:
-            fileinfo = self.filehandler.read_fileinfo_file()
-
-            if fileinfo != None:
-
-                open_path = fileinfo[0]
-                open_page = fileinfo[1] + 1
-
-        prefs['previous quit was quit and save'] = False
-
         if open_path is not None:
             self.filehandler.open_file(open_path)
 
@@ -276,6 +266,8 @@ class MainWindow(gtk.Window):
             self.actiongroup.get_action('slideshow').activate()
 
         if show_library:
+            if open_path is None:
+                self.hide()
             self.actiongroup.get_action('library').activate()
 
         self.cursor_handler.auto_hide_on()

@@ -156,6 +156,7 @@ class _LibraryDialog(gtk.Window):
 
         if event.keyval == gtk.keysyms.Escape:
             self.hide()
+            self._window.present()
 
 
 def open_dialog(action, window):
@@ -174,8 +175,7 @@ def open_dialog(action, window):
         else:
             _dialog = _LibraryDialog(window, window.filehandler)
 
-    else:
-        _dialog.present()
+    _dialog.present()
 
     if prefs['scan for new books on library startup']:
         _dialog.scan_for_new_files()

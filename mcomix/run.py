@@ -189,11 +189,19 @@ def run():
     elif len(args) > 1:
         open_path = args
 
-    elif preferences.prefs['auto load last file'] \
-        and preferences.prefs['path to last file'] \
-        and os.path.isfile(preferences.prefs['path to last file']):
-        open_path = preferences.prefs['path to last file']
-        open_page = preferences.prefs['page of last file']
+    elif not opts.library:
+        if preferences.prefs['previous quit was quit and save']:
+            fileinfo = self.filehandler.read_fileinfo_file()
+            if fileinfo != None:
+                open_path = fileinfo[0]
+                open_page = fileinfo[1] + 1
+            preferences.prefs['previous quit was quit and save'] = False
+        if open_path is None \
+           and preferences.prefs['auto load last file'] \
+           and preferences.prefs['path to last file'] \
+           and os.path.isfile(preferences.prefs['path to last file']):
+            open_path = preferences.prefs['path to last file']
+            open_page = preferences.prefs['page of last file']
 
     # Some languages require a RTL layout
     if preferences.prefs['language'] in ('he', 'fa'):
