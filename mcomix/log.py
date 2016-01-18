@@ -7,12 +7,12 @@ this default logger. """
 import logging
 import sys
 import locale
-from logging import DEBUG, INFO, WARNING, ERROR
+from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 from mcomix import i18n
 
 __all__ = ['debug', 'info', 'warning', 'error', 'setLevel',
-           'DEBUG', 'INFO', 'WARNING', 'ERROR']
+           'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
 
 def print_(*args, **options):
     """ This function is supposed to replace the standard print statement.
@@ -43,28 +43,14 @@ def print_(*args, **options):
 
             sys.stdout.write(text.encode(encoding, 'replace'))
 
-    def print_win32(text):
-        if not text: return
-
-        import ctypes
-        INVALID_HANDLE_VALUE, STD_OUTPUT_HANDLE = -1, -11
-        outhandle = ctypes.windll.kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
-        if outhandle != INVALID_HANDLE_VALUE and outhandle:
-            chars_written = ctypes.c_int(0)
-            ctypes.windll.kernel32.WriteConsoleW(outhandle,
-                text, len(text), ctypes.byref(chars_written), None)
-        else:
-            print_generic(text)
-
-    print_function = sys.platform == 'win32' and print_win32 or print_generic
     if len(args) > 0:
-        print_function(args[0])
+        print_generic(args[0])
 
     for text in args[1:]:
-        print_function(sep)
-        print_function(text)
+        print_generic(sep)
+        print_generic(text)
 
-    print_function(end)
+    print_generic(end)
 
 class PrintHandler(logging.Handler):
     """ Handler using L{print_} to output messages. """

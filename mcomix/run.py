@@ -9,6 +9,12 @@ if __name__ == '__main__':
     print >> sys.stderr, 'Please do not run this script directly! Use mcomixstarter.py instead.'
     sys.exit(1)
 
+# Setup console on Windows.
+if sys.platform == 'win32':
+    from mcomix.win32 import console
+    if console.get_console_type() is None:
+        console.setup_popup_console()
+
 # These modules must not depend on GTK, pkg_resources, PIL,
 # or any other optional libraries.
 from mcomix import (
@@ -19,12 +25,12 @@ from mcomix import (
 )
 
 def wait_and_exit(code=1):
-    """ Wait for the user pressing ENTER before closing. This should help
-    the user find possibly missing dependencies when starting, since the
-    Python window will not close down immediately after the error. """
-    if sys.platform == 'win32' and not sys.stdin.closed and not sys.stdout.closed:
-        print
-        raw_input("Press ENTER to continue...")
+    """ When applicable on Windows, wait for the user pressing a key before quitting.
+    This should help the user find possibly missing dependencies when starting,
+    since the console window will not close down immediately after the error.
+    """
+    if sys.platform == 'win32':
+        console.pause_on_output()
     sys.exit(code)
 
 class OptionParser(optparse.OptionParser):
@@ -76,11 +82,18 @@ class OptionParser(optparse.OptionParser):
                             help=_('Start the application with zoom set to fit height.'))
         self.add_option_group(fitmodes)
 
+        if sys.platform == 'win32' and console.get_console_type() == 'popup':
+            logdefault = None
+        else:
+            logdefault = 'warn'
         debugopts = optparse.OptionGroup(self, _('Debug options'))
-        debugopts.add_option('-W', dest='loglevel', action='store', default='warn',
+        debugopts.add_option('-W', dest='loglevel', action='store', default=logdefault,
                              choices=('all', 'debug', 'info', 'warn', 'error'),
                              metavar='[ all | debug | info | warn | error ]',
                              help=_('Sets the desired output log level.'))
+        debugopts.add_option('--logfile', dest='logfile',
+                             default=None, metavar='FILE',
+                             help=_('Redirect stdout/stderr to FILE.'))
         # This supresses an error when MComix is used with cProfile
         debugopts.add_option('-o', dest='output', action='store',
                              default='', help=optparse.SUPPRESS_HELP)
@@ -137,8 +150,17 @@ def run():
     argv = portability.get_commandline_args()
     opts, args = parse_arguments(argv)
 
-    # First things first: set the log level.
-    log.setLevel(opts.loglevel)
+    # Setup logging.
+    if opts.logfile is not None:
+        if opts.logfile.startswith('+'):
+            filename = opts.logfile[1:]
+            mode = 'a'
+        else:
+            filename = opts.logfile
+            mode = 'w'
+        sys.stdout = sys.stderr = open(filename, mode)
+    if opts.loglevel is not None:
+        log.setLevel(opts.loglevel)
 
     # On Windows, update the fontconfig cache manually, before MComix starts
     # using Gtk, since the process may take several minutes, during which the
@@ -167,7 +189,14 @@ def run():
         args.extend(sys.argv[1:])
         if '--update-fontconfig-cache' in args:
             args.remove('--update-fontconfig-cache')
+        # Make sure we don't loose the start of the log.
+        if opts.logfile is not None and not opts.logfile.startswith('+'):
+            args.append('--logfile=+' + opts.logfile)
         log.debug('restarting MComix from fresh: os.execv(%s, %s)', repr(exe), args)
+        sys.stdout.flush()
+        sys.stderr.flush()
+        if sys.platform == 'win32':
+            console.pause_on_output()
         try:
             os.execv(exe, args)
         except Exception as e:
@@ -263,6 +292,10 @@ def run():
         signal.signal(signal.SIGCHLD, on_sigchld)
 
     signal.signal(signal.SIGTERM, lambda: gobject.idle_add(window.terminate_program))
+
+    if opts.logfile is None and opts.loglevel is None:
+        sys.stdin = sys.stdout = sys.stderr = open(os.devnull, 'r+b')
+
     try:
         gtk.main()
     except KeyboardInterrupt: # Will not always work because of threading.
