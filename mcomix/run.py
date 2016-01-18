@@ -18,81 +18,89 @@ from mcomix import (
     preferences,
 )
 
-def wait_and_exit():
+def wait_and_exit(code=1):
     """ Wait for the user pressing ENTER before closing. This should help
     the user find possibly missing dependencies when starting, since the
     Python window will not close down immediately after the error. """
     if sys.platform == 'win32' and not sys.stdin.closed and not sys.stdout.closed:
         print
         raw_input("Press ENTER to continue...")
-    sys.exit(1)
+    sys.exit(code)
 
-def print_version(opt, value, parser, *args, **kwargs):
-    """Print the version number and exit."""
-    print_(constants.APPNAME + ' ' + constants.VERSION)
-    sys.exit(0)
+class OptionParser(optparse.OptionParser):
+
+    def __init__(self):
+        optparse.OptionParser.__init__(
+            self,
+            add_help_option=False,
+            usage="%%prog %s" % _('[OPTION...] [PATH]'),
+            description=_('View images and comic book archives.'),
+        )
+        self.add_option('--help', action='help',
+                        help=_('Show this help and exit.'))
+        self.add_option('-s', '--slideshow', dest='slideshow', action='store_true',
+                        help=_('Start the application in slideshow mode.'))
+        self.add_option('-l', '--library', dest='library', action='store_true',
+                        help=_('Show the library on startup.'))
+        self.add_option('-v', '--version', action='callback', callback=self.print_version,
+                        help=_('Show the version number and exit.'))
+        if sys.platform == 'win32':
+            self.add_option('--no-update-fontconfig-cache',
+                            dest='update_fontconfig_cache',
+                            default=True, action='store_false',
+                            help=_('Don\'t update fontconfig cache at startup.'))
+        else:
+            self.add_option('--update-fontconfig-cache',
+                            dest='update_fontconfig_cache',
+                            default=False, action='store_true',
+                            help=_('Update fontconfig cache at startup.'))
+
+        viewmodes = optparse.OptionGroup(self, _('View modes'))
+        viewmodes.add_option('-f', '--fullscreen', dest='fullscreen', action='store_true',
+                             help=_('Start the application in fullscreen mode.'))
+        viewmodes.add_option('-m', '--manga', dest='manga', action='store_true',
+                             help=_('Start the application in manga mode.'))
+        viewmodes.add_option('-d', '--double-page', dest='doublepage', action='store_true',
+                             help=_('Start the application in double page mode.'))
+        self.add_option_group(viewmodes)
+
+        fitmodes = optparse.OptionGroup(self, _('Zoom modes'))
+        fitmodes.add_option('-b', '--zoom-best', dest='zoommode', action='store_const',
+                            const=constants.ZOOM_MODE_BEST,
+                            help=_('Start the application with zoom set to best fit mode.'))
+        fitmodes.add_option('-w', '--zoom-width', dest='zoommode', action='store_const',
+                            const=constants.ZOOM_MODE_WIDTH,
+                            help=_('Start the application with zoom set to fit width.'))
+        fitmodes.add_option('-h', '--zoom-height', dest='zoommode', action='store_const',
+                            const=constants.ZOOM_MODE_HEIGHT,
+                            help=_('Start the application with zoom set to fit height.'))
+        self.add_option_group(fitmodes)
+
+        debugopts = optparse.OptionGroup(self, _('Debug options'))
+        debugopts.add_option('-W', dest='loglevel', action='store', default='warn',
+                             choices=('all', 'debug', 'info', 'warn', 'error'),
+                             metavar='[ all | debug | info | warn | error ]',
+                             help=_('Sets the desired output log level.'))
+        # This supresses an error when MComix is used with cProfile
+        debugopts.add_option('-o', dest='output', action='store',
+                             default='', help=optparse.SUPPRESS_HELP)
+        self.add_option_group(debugopts)
+
+    def print_version(self, opt, value, parser, *args, **kwargs):
+        """Print the version number and exit."""
+        self.exit(msg='%s %s\n' % (constants.APPNAME, constants.VERSION))
+
+    def exit(self, status=0, msg=None):
+        if msg:
+            sys.stderr.write(msg)
+        wait_and_exit(status)
 
 def parse_arguments(argv):
     """ Parse the command line passed in <argv>. Returns a tuple containing
     (options, arguments). Errors parsing the command line are handled in
     this function. """
-
-    parser = optparse.OptionParser(
-            usage="%%prog %s" % _('[OPTION...] [PATH]'),
-            description=_('View images and comic book archives.'),
-            add_help_option=False)
-    parser.add_option('--help', action='help',
-            help=_('Show this help and exit.'))
-    parser.add_option('-s', '--slideshow', dest='slideshow', action='store_true',
-            help=_('Start the application in slideshow mode.'))
-    parser.add_option('-l', '--library', dest='library', action='store_true',
-            help=_('Show the library on startup.'))
-    parser.add_option('-v', '--version', action='callback', callback=print_version,
-            help=_('Show the version number and exit.'))
-    if sys.platform == 'win32':
-        parser.add_option('--no-update-fontconfig-cache',
-                          dest='update_fontconfig_cache',
-                          default=True, action='store_false',
-                          help=_('Don\'t update fontconfig cache at startup.'))
-    else:
-        parser.add_option('--update-fontconfig-cache',
-                          dest='update_fontconfig_cache',
-                          default=False, action='store_true',
-                          help=_('Update fontconfig cache at startup.'))
-
-    viewmodes = optparse.OptionGroup(parser, _('View modes'))
-    viewmodes.add_option('-f', '--fullscreen', dest='fullscreen', action='store_true',
-            help=_('Start the application in fullscreen mode.'))
-    viewmodes.add_option('-m', '--manga', dest='manga', action='store_true',
-            help=_('Start the application in manga mode.'))
-    viewmodes.add_option('-d', '--double-page', dest='doublepage', action='store_true',
-            help=_('Start the application in double page mode.'))
-    parser.add_option_group(viewmodes)
-
-    fitmodes = optparse.OptionGroup(parser, _('Zoom modes'))
-    fitmodes.add_option('-b', '--zoom-best', dest='zoommode', action='store_const',
-            const=constants.ZOOM_MODE_BEST,
-            help=_('Start the application with zoom set to best fit mode.'))
-    fitmodes.add_option('-w', '--zoom-width', dest='zoommode', action='store_const',
-            const=constants.ZOOM_MODE_WIDTH,
-            help=_('Start the application with zoom set to fit width.'))
-    fitmodes.add_option('-h', '--zoom-height', dest='zoommode', action='store_const',
-            const=constants.ZOOM_MODE_HEIGHT,
-            help=_('Start the application with zoom set to fit height.'))
-    parser.add_option_group(fitmodes)
-
-    debugopts = optparse.OptionGroup(parser, _('Debug options'))
-    debugopts.add_option('-W', dest='loglevel', action='store',
-            choices=('all', 'debug', 'info', 'warn', 'error'), default='warn',
-            metavar='[ all | debug | info | warn | error ]',
-            help=_('Sets the desired output log level.'))
-    # This supresses an error when MComix is used with cProfile
-    debugopts.add_option('-o', dest='output', action='store',
-            default='', help=optparse.SUPPRESS_HELP)
-    parser.add_option_group(debugopts)
-
+    parser = OptionParser()
     opts, args = parser.parse_args(argv)
-
     # Fix up log level to use constants from log.
     if opts.loglevel == 'all':
         opts.loglevel = log.DEBUG
@@ -104,7 +112,6 @@ def parse_arguments(argv):
         opts.loglevel = log.WARNING
     elif opts.loglevel == 'error':
         opts.loglevel = log.ERROR
-
     return opts, args
 
 def run():
