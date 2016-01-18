@@ -12,7 +12,7 @@ try:
     import subprocess32 as subprocess
     _using_subprocess32 = True
 except ImportError:
-    log.warning('subprocess32 not available! using subprocess')
+    log.info('subprocess32 not available! using subprocess')
     import subprocess
     _using_subprocess32 = False
 
