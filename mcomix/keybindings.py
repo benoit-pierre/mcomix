@@ -286,13 +286,15 @@ class _KeybindingManager(object):
 
     def _initialize(self):
         """ Restore keybindings from disk. """
-        try:
-            fp = open(constants.KEYBINDINGS_CONF_PATH, "r")
-            stored_action_bindings = json.load(fp)
-            fp.close()
-        except Exception, e:
-            log.error(_("Couldn't load keybindings: %s"), e)
-            stored_action_bindings = {}
+        stored_action_bindings = {}
+        if os.path.exists(constants.KEYBINDINGS_CONF_PATH):
+            try:
+                fp = open(constants.KEYBINDINGS_CONF_PATH, "r")
+                stored_action_bindings = json.load(fp)
+                fp.close()
+            except Exception, e:
+                log.error(_("Couldn't load keybindings: %s"), e)
+                stored_action_bindings = {}
 
         for action in BINDING_INFO.iterkeys():
             if action in stored_action_bindings:
