@@ -249,7 +249,7 @@ install_pygobject()
 
   rm -rf "$srcdir"
   aunpack --extract-to="$srcdir" --format=7z "$distdir/$file" >/dev/null
-  python2 "$win32dir/pygi-aio-installer.py" "$srcdir" "$dstdir" "$@"
+  python2 "$win32dir/pygobject_installer.py" "$srcdir" "$dstdir" "$@"
   rm -rf "$srcdir"
 }
 
