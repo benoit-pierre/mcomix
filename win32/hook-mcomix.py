@@ -87,7 +87,7 @@ datas.extend((
     ('COPYING', 'doc/MComix'),
     ('ChangeLog', 'doc/MComix'),
     # Add Python documentation.
-    ('C:/Python27/LICENSE.tx', 'doc/Python'),
+    ('C:/Python27/LICENSE.txt', 'doc/Python'),
     ('C:/Python27/NEWS.txt', 'doc/Python'),
     ('C:/Python27/README.txt', 'doc/Python'),
     # Add Cairo/GLib/GTK+/Pango runtime files.
@@ -100,16 +100,15 @@ datas.extend((
     ('C:/Python27/Lib/site-packages/gnome/share/themes/MS-Windows/gtk-2.0', 'share/themes/MS-Windows'),
     ('C:/Python27/Lib/site-packages/gnome/fc-cache.exe', './'),
     # Add Unrar DLL and documentation.
-    ('C:/Program Files/UnrarDLL/unrar.dll', '.'),
-    ('C:/Program Files/UnrarDLL/*.txt', 'doc/unrar'),
+    ('C:/Progs/UnrarDLL/unrar.dll', '.'),
+    ('C:/Progs/UnrarDLL/*.txt', 'doc/unrar'),
     # Add MuPDF tools and documentation.
-    ('C:/Program Files/MuPDF/mudraw.exe', '.'),
-    ('C:/Program Files/MuPDF/mutool.exe', '.'),
-    ('C:/Program Files/MuPDF/*.txt', 'doc/mupdf'),
+    ('C:/Progs/MuPDF/mutool.exe', '.'),
+    ('C:/Progs/MuPDF/*.txt', 'doc/mupdf'),
     # Add 7z executable and documentation.
-    ('C:/Program Files/7-Zip/7z.exe', '.'),
-    ('C:/Program Files/7-Zip/7z.dll', '.'),
-    ('C:/Program Files/7-Zip/License.txt', 'doc/7z'),
+    ('C:/Progs/7-Zip/7z.exe', '.'),
+    ('C:/Progs/7-Zip/7z.dll', '.'),
+    ('C:/Progs/7-Zip/License.txt', 'doc/7z'),
     # Override GTK configuration (fix fonts).
     ('win32/gtkrc', 'etc/gtk-2.0'),
 ))
