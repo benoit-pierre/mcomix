@@ -58,7 +58,8 @@ for pkgname in (
     pkg_info = '\n'.join(pkg.get_metadata_lines('PKG-INFO'))
     doc_dir = 'build/doc/%s' % pkgname
     info_file = '%s/PKG-INFO.txt' % doc_dir
-    os.makedirs(doc_dir)
+    if not os.path.exists(doc_dir):
+        os.makedirs(doc_dir)
     with open(info_file, 'w+') as fp:
         fp.write(pkg_info)
         fp.write('\n')
