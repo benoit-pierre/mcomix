@@ -29,7 +29,7 @@ winedir="$win32dir/.wine"
 tmpdir="$winedir/tmp"
 distdir="$win32dir/.dist"
 installed="$winedir/installed"
-programfiles="$winedir/drive_c/Program Files"
+progsdir="$winedir/drive_c/Progs"
 
 export WINEARCH='win32' WINEPREFIX="$winedir" WINEDEBUG="-all"
 unset PYTHONPATH
@@ -49,15 +49,31 @@ unset \
   GTK_PATH \
   GTK_THEME \
 
+
+get_winpath()
+{
+  case "$1" in
+    [A-Z]:\\*)
+      echo "$1"
+      ;;
+    [A-Z]:/*)
+      echo "$1" | sed 's,/,\\,g'
+      ;;
+    *)
+      winepath -w "$1"
+      ;;
+  esac
+}
+
 add_to_wine_path()
 {
-  winepath="$(echo -n "$1" | sed 's,[^/]$,&/,;s,/,\\\\\\\\,g')"
+  path="$(get_winpath "$1" | sed 's,[\\/]$,,;s,\\,\\\\\\\\,g')"
   cat >"$winedir/path.reg" <<EOF
 REGEDIT4
 
 [HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment]
 EOF
-  sed -n "/^\"PATH\"=str(2):\"/{h;/[\";]${winepath}[\";]/"'!'"{s/:\"/&${winepath};/};h;p;Q0};\$Q1" "$winedir/system.reg" >>"$winedir/path.reg"
+  sed -n "/^\"PATH\"=str(2):\"/{h;/[\";]${path}\\\\\\?[\";]/"'!'"{s/:\"/&${path};/};h;p;Q0};\$Q1" "$winedir/system.reg" >>"$winedir/path.reg"
   winecmd regedit "$winedir/path.reg"
 }
 
@@ -125,23 +141,25 @@ install_7zip()
 {
   file="$1"
   src="$distdir/$file"
+  dstdir="$(get_winpath "$progsdir/7-Zip")"
 
-  install_msi "$file" /q
-  add_to_wine_path 'C:/Program Files/7-Zip'
+  install_exe "$file" '/S' "/D$dstdir"
+  add_to_wine_path "$dstdir"
 }
 
 install_unzip()
 {
   file="$1"
   src="$distdir/$file"
+  dstdir="$progsdir/unzip"
 
-  rm -rf "$programfiles/unzip"
-  mkdir "$programfiles/unzip"
+  rm -rf "$dstdir"
+  mkdir "$dstdir"
   (
-    cd "$programfiles/unzip"
+    cd "$dstdir"
     winecmd wine "$src"
   )
-  add_to_wine_path "C:/Program Files/unzip"
+  add_to_wine_path "$dstdir"
 }
 
 build_distribute()
@@ -173,7 +191,7 @@ install_msi()
 install_archive()
 {
   file="$1"
-  dstdir="$2"
+  dstdir="$progsdir/$2"
   format="$3"
 
   cmd=(aunpack --save-outdir="$file.dir")
@@ -183,15 +201,15 @@ install_archive()
   fi
   cmd+=("$distdir/$file")
 
-  rm -rf "$programfiles/$dstdir"
+  rm -rf "$dstdir"
   (
     cd "$tmpdir"
     cat /dev/null >"$file.dir"
     "${cmd[@]}" >/dev/null
   )
   srcdir="$tmpdir/$(cat "$tmpdir/$file.dir")"
-  mv -v "$srcdir" "$programfiles/$dstdir"
-  add_to_wine_path "C:/Program Files/$dstdir"
+  mv -v "$srcdir" "$dstdir"
+  add_to_wine_path "$dstdir"
 }
 
 install_python_source()
@@ -271,13 +289,13 @@ install_mcomix()
   version="$2"
 
   echo install_mcomix "$version"
-  aunpack --extract-to="$programfiles" "$distdir/$file" >/dev/null
+  aunpack --extract-to="$progsdir" "$distdir/$file" >/dev/null
 }
 
 helper_setup()
 {
   winecmd wineboot --init
-  mkdir -p "$distdir" "$tmpdir"
+  mkdir -p "$distdir" "$tmpdir" "$progsdir"
   touch "$installed"
   # Bare minimum for running MComix.
   install 'Python' 'https://www.python.org/ftp/python/2.7.10/python-2.7.10.msi' 9e62f37407e6964ee0374b32869b7b4ab050d12a install_msi /q
@@ -291,7 +309,7 @@ helper_setup()
   # Support for PDF files.
   install 'MuPDF' 'http://mupdf.com/downloads/archive/mupdf-1.8-windows.zip' 27683c9186eab0bd53674e959c102bc88c384017 install_archive MuPDF
   # Support for 7z files.
-  install '7zip' 'http://7-zip.org/a/7z1512.msi' 43a87ae650b3e0651d55da055c82d58336e6c257 install_7zip
+  install '7zip' 'http://www.7-zip.org/a/7z1514.exe' f2e5efd7b47d1fb5b68d355191cfed1a66b82c79 install_7zip
   # Additional extractors for testing.
   install 'UnrarDLL executable' 'http://www.rarlab.com/rar/unrarw32.exe' 8f6440133d8b3f06c0478df19abc33a4eced6bdb install_archive Unrar rar
   install 'UnZIP executable' 'ftp://ftp.info-zip.org/pub/infozip/win32/unz600xn.exe' 5ae7a23e7abf2c5ca44cefb0d6bf6248e6563db1 install_archive unzip zip
@@ -367,14 +385,14 @@ helper_dist_setup()
 {(
   winedir="$win32dir/.wine-dist"
   tmpdir="$winedir/tmp"
-  programfiles="$winedir/drive_c/Program Files"
+  progsdir="$winedir/drive_c/Progs"
 
   export WINEARCH='win32' WINEPREFIX="$winedir"
 
   cd "$mcomixdir"
   rm -rf "$winedir"
   winecmd wineboot --init
-  mkdir -p "$distdir" "$tmpdir"
+  mkdir -p "$distdir" "$tmpdir" "$progsdir"
   version="$(python2 -c 'from mcomix.constants import VERSION; print VERSION')"
   cp "$mcomixdir/dist/mcomix-$version.win32.all-in-one.zip" "$distdir/"
   install_archive "mcomix-$version.win32.all-in-one.zip" MComix
@@ -404,7 +422,7 @@ helper_dist_test()
 
 helper_mcomix()
 {
-  execmd=(python.exe "$(winepath -w "$mcomixdir/mcomixstarter.py")")
+  execmd=(python.exe "$(get_winpath "$mcomixdir/mcomixstarter.py")")
   exeargs=()
   for arg in "$@"
   do
@@ -412,7 +430,7 @@ helper_mcomix()
       -src)
         ;;
       -[0-9]*)
-        execmd=("$(winepath -w "$programfiles/MComix$arg/MComix.exe")" )
+        execmd=("$(get_winpath "$progsdir/MComix$arg/MComix.exe")" )
         ;;
       *)
         exeargs+=("$arg")
