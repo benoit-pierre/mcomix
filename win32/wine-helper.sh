@@ -168,6 +168,16 @@ build_distribute()
   winecmd wine python.exe setup.py --quiet install
 }
 
+easy_install()
+{
+  file="$1"
+  src="$distdir/$file"
+  shift
+  options=("$@")
+
+  winecmd wine easy_install.exe "$src" "${options[@]}"
+}
+
 install_exe()
 {
   file="$1"
@@ -301,9 +311,9 @@ helper_setup()
   install 'Python' 'https://www.python.org/ftp/python/2.7.10/python-2.7.10.msi' 9e62f37407e6964ee0374b32869b7b4ab050d12a install_msi /q
   install 'PyGObject for Windows' 'http://downloads.sourceforge.net/project/pygobjectwin32/pygi-aio-3.18.2_rev3-setup.exe' f54d00b245da423465081c01df1347282c289049 install_pygobject GTK
   install 'PyGObject for Windows: legacy PyGTK' 'http://downloads.sourceforge.net/project/pygobjectwin32/legacy_pygtk-2.24.0_gtk-2.24.28+themes_py27_win32_win64.7z' 295fe473cea9eeeb20a75b8b0c6b2a7215347566 install_pygtk
-  install 'Pillow' 'https://pypi.python.org/packages/2.7/P/Pillow/Pillow-3.1.0.win32-py2.7.exe' fe2bb05cab0f4e406f305965bb876b48427163f8 install_exe
+  install 'Pillow' 'https://pypi.python.org/packages/2.7/P/Pillow/Pillow-3.1.0.win32-py2.7.exe' fe2bb05cab0f4e406f305965bb876b48427163f8 easy_install
   # Better support for password protected zip files.
-  install 'Python: czipfile' 'https://pypi.python.org/packages/2.7/c/czipfile/czipfile-1.0.0.win32-py2.7.exe' 8478c1d659821259c1140cd8600d61a2fa13128f install_exe
+  install 'Python: czipfile' 'https://pypi.python.org/packages/2.7/c/czipfile/czipfile-1.0.0.win32-py2.7.exe' 8478c1d659821259c1140cd8600d61a2fa13128f easy_install
   # Support for RAR files.
   install 'UnRAR DLL' 'http://www.rarlab.com/rar/UnRARDLL.exe' 920f0267911555595b9830046fcd573753dc47a2 install_archive UnrarDLL rar
   # Support for PDF files.
@@ -314,7 +324,7 @@ helper_setup()
   install 'UnrarDLL executable' 'http://www.rarlab.com/rar/unrarw32.exe' 8f6440133d8b3f06c0478df19abc33a4eced6bdb install_archive Unrar rar
   install 'UnZIP executable' 'ftp://ftp.info-zip.org/pub/infozip/win32/unz600xn.exe' 5ae7a23e7abf2c5ca44cefb0d6bf6248e6563db1 install_archive unzip zip
   # Install PyInstaller and dependencies.
-  install 'PyInstaller dependency: Python for Windows Extensions' 'http://downloads.sourceforge.net/project/pywin32/pywin32/Build 219/pywin32-219.win32-py2.7.exe' 8bc39008383c646bed01942584117113ddaefe6b install_exe
+  install 'PyInstaller dependency: Python for Windows Extensions' 'http://downloads.sourceforge.net/project/pywin32/pywin32/Build 219/pywin32-219.win32-py2.7.exe' 8bc39008383c646bed01942584117113ddaefe6b easy_install
   install 'PyInstaller dependency: setuptools' 'https://pypi.python.org/packages/source/s/setuptools/setuptools-14.3.1.zip' fb16eea8e9ddb5a973e98362aabb9675c8ec63ee install_python_source
   install 'PyInstaller dependency: distribute' 'https://pypi.python.org/packages/source/d/distribute/distribute-0.7.3.zip' 297bd0725027ca39dcb35fa00327bc35b2f2c5e3 install_python_source build_distribute
   install 'PyInstaller' 'https://pypi.python.org/packages/source/P/PyInstaller/PyInstaller-2.1.tar.gz' 530e0496087ea955ebed6f11b0172c50c73952af install_python_source
