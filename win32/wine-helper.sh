@@ -27,7 +27,7 @@ win32dir="$(realpath "$(dirname "$0")")"
 mcomixdir="$(realpath "$win32dir/..")"
 winedir="$win32dir/.wine"
 tmpdir="$winedir/tmp"
-distdir="$win32dir/.dist"
+distdir="$HOME/.cache/wine"
 installed="$winedir/installed"
 progsdir="$winedir/drive_c/Progs"
 
