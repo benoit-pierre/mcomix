@@ -43,7 +43,7 @@ images.extend([ os.path.basename(img)
 
 setuptools.setup(
     name = constants.APPNAME.lower(),
-    version = constants.VERSION,
+    version = os.environ.get('MCOMIX_VERSION', constants.VERSION),
     packages = ['mcomix', 'mcomix.archive', 'mcomix.library',
         'mcomix.messages', 'mcomix.images', 'mcomix.win32'],
     package_data = {
